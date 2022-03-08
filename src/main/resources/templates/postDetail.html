@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>Post Detail</title>
+    <!-- Bootstrap Css -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+    <!-- Core theme CSS (includes Bootstrap)-->
+    <link href="/css/styles.css" rel="stylesheet" />
+    <!-- Bootstrap Js -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.js"></script>
+    <!-- Summernote -->
+    <link href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.js"></script>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg bg-dark text-uppercase fixed-top" id="mainNav">
+    <div class="container">
+        <a class="navbar-brand" href="/admin/home">
+            Dev Portfolio
+            <span sec:authorize-expr="isAuthenticated()">
+                <span class="text-white-50">[</span>
+                <span class="text-white-50 text-lowercase" th:text="${userName}">ADMIN</span>
+                <span class="text-white-50">]</span>
+            </span>
+        </a>
+        <button class="navbar-toggler text-uppercase font-weight-bold bg-primary text-white rounded" type="button" data-bs-toggle="collapse" data-bs-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+            Menu
+            <i class="fas fa-bars"></i>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarResponsive">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item mx-0 mx-lg-1"><a class="nav-link py-3 px-0 px-lg-3 rounded" href="/admin/home">Portfolio</a></li>
+                <li class="nav-item mx-0 mx-lg-1"><a class="nav-link py-3 px-0 px-lg-3 rounded" href="/admin/home">About</a></li>
+                <li class="nav-item mx-0 mx-lg-1" sec:authorize-expr="isAuthenticated()">
+                    <a class="nav-link py-3 px-0 px-lg-3 rounded" href="/admin/posts/write">write post</a>
+                </li>
+                <li class="nav-item mx-0 mx-lg-1" sec:authorize-expr="isAuthenticated()">
+                    <a class="nav-link py-3 px-0 px-lg-3 rounded" href="/logout">LOGOUT</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+<section class="page-section portfolio" id="portfolio">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8">
+                <!-- Post content-->
+                <article class="mt-5">
+                    <!-- Post header-->
+                    <header class="mb-4">
+                        <!-- Post title-->
+                        <h1 class="fw-bolder mb-1" th:text="${post.title}">Blog Post</h1>
+                        <!-- Post meta content-->
+                        <div class="mb-4 mt-3">
+                            <div class="text-muted fst-italic mb-2 mt-3 float-start">Posted on <span th:text="${post.modifiedDate}">Date</span></div>
+                            <form sec:authorize-expr="isAuthenticated()" method="post" th:action="'/admin/api/posts/'+${post.id}" class="float-end">
+                                <input type="hidden" name="_method" value="DELETE">
+                                <button type="submit" class="btn btn-sm btn-danger opacity-50">Delete</button>
+                            </form>
+                            <form sec:authorize-expr="isAuthenticated()" method="get" th:action="'/admin/posts/update/'+${post.id}" class="float-end pe-1">
+                                <button type="submit" class="btn btn-sm btn-primary opacity-75">Modify</button>
+                            </form>
+                        </div>
+                        <br>
+                    </header>
+                    <hr class="mb-5">
+                    <!-- Post content-->
+                    <section class="mb-3">
+                        <div th:utext="${post.content}">
+                            Content
+                        </div>
+                        <div class="fw-bold mt-5">
+                            <span class="me-1">첨부파일: </span><span class="me-3" th:text="${attach.fileName}">Attachments</span><a th:href="'/download/'+${attach.id}" class="text-primary opacity-75">[DOWNLOAD]</a>
+                        </div>
+                    </section>
+                </article>
+                <!-- Comments section-->
+                <section class="mb-5 mt-4">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <!-- Comment form-->
+                            <form class="mb-4 mt-3" method="post" th:object="${commentForm}" action="/api/posts/comments" onsubmit="return checkDuplicatedUsername();">
+                                <div class="form-row mb-2">
+                                    <div class="form-group col-md-6">
+                                        <label th:for="username">Username</label>
+                                        <input type="text" class="form-control" th:id="username" name="username" th:field="*{username}" placeholder="Input Username" required maxlength="20">
+                                    </div>
+                                    <div class="form-group col-md-6">
+                                        <label th:for="password">Password</label>
+                                        <input type="password" class="form-control" th:id="password" name="password" th:field="*{password}" placeholder="Input Password" required maxlength="20">
+                                    </div>
+                                </div>
+                                <input type="hidden" name="postId" id="postId" th:value="${post.id}">
+                                <textarea class="form-control" rows="3" th:field="*{text}" id="text" name="text" placeholder="Leave a comment" style="resize: none" maxlength="500" required></textarea>
+                                <button type="submit" class="fw-bold mt-3 btn btn-sm btn-outline-secondary">Submit</button>
+                            </form>
+                            <hr class="mt-3 mb-5">
+
+                            <!-- Single comment-->
+                            <div class="">
+                                <div class="ms-3">
+                                    <div class="mb-3" th:each="comment : ${comments}">
+                                        <span class="commenter pe-2 ps-1" th:text="${comment.username}" style="font-weight: bold;">
+                                            Commenter Name
+                                        </span>
+                                        <span class="text-primary text-opacity-75 pe-2" th:text="${comment.modifiedDate}">modifiedDate</span>
+
+                                        <form sec:authorize-expr="isAuthenticated()" method="post" th:action="'/api/posts/comments/'+${comment.commentId}" class="float-end">
+                                            <input type="hidden" name="_method" value="DELETE">
+                                            <input type="hidden" name="postId" th:value="${post.id}">
+                                            <button class="btn btn-dark opacity-50 btn-sm" type="submit">delete</button>
+                                        </form>
+
+                                        <p class="border border-dark rounded p-2 mt-3" th:text="${comment.text}"></p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <script>
+                                function checkDuplicatedUsername() {
+                                    var commenters = document.getElementsByClassName("commenter");
+                                    var inputName = document.getElementById("username").value;
+
+                                    for (i=0; i<commenters.length; i++) {
+                                        if (inputName == commenters[i].innerHTML) {
+                                            alert('Please input another name! (duplicated username)')
+                                            return false;
+                                        }
+                                    }
+                                    return true;
+                                };
+                            </script>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            <!-- Side widgets-->
+            <div class="col-lg-4 mt-lg-5">
+                <!-- Search widget-->
+                <div class="card mb-4">
+                    <div class="card-header">Search</div>
+                    <div class="card-body">
+                        <div class="input-group">
+                            <input class="form-control" type="text" placeholder="Enter search term..." aria-label="Enter search term..." aria-describedby="button-search">
+                            <button class="btn btn-primary" id="button-search" type="button">Go!</button>
+                        </div>
+                    </div>
+                </div>
+                <!-- Categories widget-->
+                <div class="card mb-4">
+                    <div class="card-header">Categories</div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <ul class="list-unstyled mb-0">
+                                    <li><a href="#!">Web Design</a></li>
+                                    <li><a href="#!">HTML</a></li>
+                                    <li><a href="#!">Freebies</a></li>
+                                </ul>
+                            </div>
+                            <div class="col-sm-6">
+                                <ul class="list-unstyled mb-0">
+                                    <li><a href="#!">JavaScript</a></li>
+                                    <li><a href="#!">CSS</a></li>
+                                    <li><a href="#!">Tutorials</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Side widget-->
+                <div class="card mb-4">
+                    <div class="card-header">Side Widget</div>
+                    <div class="card-body">You can put anything you want inside of these side widgets. They are easy to use, and feature the Bootstrap 5 card component!</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+</body>
+</html>
