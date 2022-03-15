@@ -11,6 +11,7 @@ import personalwebsite.personalweb.domain.posts.Post;
 import personalwebsite.personalweb.service.CommentService;
 import personalwebsite.personalweb.service.FileService;
 import personalwebsite.personalweb.service.PostService;
+import personalwebsite.personalweb.web.dto.FileResponseDto;
 import personalwebsite.personalweb.web.dto.comments.CommentForm;
 import personalwebsite.personalweb.web.dto.comments.CommentListResponseDto;
 import personalwebsite.personalweb.web.dto.posts.PostListResponseDto;
@@ -76,8 +77,9 @@ public class HomeController {
             model.addAttribute("userName", user.getName());
         }
         model.addAttribute("post", postService.findPostById(postId));
-        model.addAttribute("attach", fileService.findReferenceByPostId(postId));
-
+        if (fileService.checkPostHasAttachment(postId)) {
+            model.addAttribute("attach", fileService.findReferenceByPostId(postId));
+        }
         model.addAttribute("commentForm", new CommentForm());
         List<CommentListResponseDto> comments = commentService.findAllComments(postId);
         model.addAttribute("comments", comments);

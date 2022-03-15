@@ -8,13 +8,11 @@ import personalwebsite.personalweb.domain.comments.Comment;
 public class CommentForm {
 
     private String username;
-    private String password;
     private String text;
 
     public Comment toEntity() {
         return Comment.builder()
                 .username(username)
-                .password(password)
                 .text(text)
                 .build();
     }
