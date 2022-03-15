@@ -1,17 +1,26 @@
 package personalwebsite.personalweb.service;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+import personalwebsite.personalweb.config.auth.dto.SessionUser;
 import personalwebsite.personalweb.domain.comments.Comment;
 import personalwebsite.personalweb.domain.comments.CommentRepository;
 import personalwebsite.personalweb.domain.posts.PostRepository;
-import personalwebsite.personalweb.web.advice.RestException;
+import personalwebsite.personalweb.domain.user.Role;
+import personalwebsite.personalweb.domain.user.User;
+import personalwebsite.personalweb.domain.user.UserRepository;
+import personalwebsite.personalweb.web.dto.comments.CommentForm;
 import personalwebsite.personalweb.web.dto.comments.CommentListResponseDto;
-import personalwebsite.personalweb.web.dto.comments.CommentSaveRequestDto;
 import personalwebsite.personalweb.web.dto.posts.PostForm;
 
 import java.util.Collections;
@@ -26,36 +35,60 @@ public class CommentServiceTest {
 
     @Autowired
     CommentRepository commentRepository;
-
+    @Autowired
+    UserRepository userRepository;
     @Autowired
     PostRepository postRepository;
-
     @Autowired
     CommentService commentService;
-
     @Autowired
     PostService postService;
+
+    private User user;
+    private Long postId;
+    MockHttpSession session;
+    MockHttpServletRequest request;
+
+    @Before()
+    public void setUp() throws Exception {
+        user = User.builder()
+                .name("kim")
+                .email("example@gmail.com")
+                .role(Role.USER)
+                .build();
+        userRepository.save(user);
+
+        session = new MockHttpSession();
+        session.setAttribute("user", new SessionUser(user));
+
+        request = new MockHttpServletRequest();
+        request.setSession(session);
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+
+        PostForm form = new PostForm();
+        form.setTitle("title");
+        form.setSummary("summary");
+        form.setContent("content");
+        postId = postService.savePost(form);
+    }
+
+    @After
+    public void cleanup() {
+        session.clearAttributes();
+        session = null;
+        commentRepository.deleteAll();
+        postRepository.deleteAll();
+        userRepository.deleteAll();
+    }
 
     @Test
     public void 댓글작성_조회() {
         //given
-        String title = "test title";
-        String content = "test content";
-        PostForm requestDto = new PostForm();
-        requestDto.setTitle(title);
-        requestDto.setContent(content);
-        Long postId = postService.savePost(requestDto);
-
         String username1 = "user1";
-        String password1 = "pass1";
         String text1 = "text1";
-        CommentSaveRequestDto commentSaveRequestDto = CommentSaveRequestDto.builder()
-                .username(username1)
-                .password(password1)
-                .text(text1)
-                .build();
+        CommentForm form = makeCommentForm(username1, text1);
 
-        Long commentId = commentService.saveComments(postId, commentSaveRequestDto);
+        Long commentId = commentService.saveComments(postId, form);
 
         //when
         List<CommentListResponseDto> allComments = commentService.findAllComments(postId);
@@ -67,70 +100,16 @@ public class CommentServiceTest {
     }
 
     @Test
-    public void 댓글중복닉네임불가() {
+    public void 댓글삭제() {
         //given
-        String title = "test title";
-        String content = "test content";
-        PostForm requestDto = new PostForm();
-        requestDto.setTitle(title);
-        requestDto.setContent(content);
-
-        Long postId = postService.savePost(requestDto);
-
         String username1 = "user1";
-        String password1 = "pass1";
         String text1 = "text1";
+        CommentForm form = makeCommentForm(username1, text1);
 
-        String username2 = "user1";
-        String password2 = "pass2";
-        String text2 = "text2";
-
-        CommentSaveRequestDto commentSaveRequestDto1 = CommentSaveRequestDto.builder()
-                .username(username1)
-                .password(password1)
-                .text(text1)
-                .build();
-
-        CommentSaveRequestDto commentSaveRequestDto2 = CommentSaveRequestDto.builder()
-                .username(username2)
-                .password(password2)
-                .text(text2)
-                .build();
+        Long commentId = commentService.saveComments(postId, form);
 
         //when
-        Long commentId1 = commentService.saveComments(postId, commentSaveRequestDto1);
-
-        //then
-        assertThrows(RestException.class, () -> {
-            commentService.saveComments(postId, commentSaveRequestDto2);
-        });
-    }
-
-    @Test
-    public void 댓글삭제_성공() {
-        //given
-        String title = "test title";
-        String content = "test content";
-        PostForm requestDto = new PostForm();
-        requestDto.setTitle(title);
-        requestDto.setContent(content);
-        Long postId = postService.savePost(requestDto);
-
-        String username1 = "user1";
-        String password1 = "pass1";
-        String text1 = "text1";
-        CommentSaveRequestDto commentSaveRequestDto = CommentSaveRequestDto.builder()
-                .username(username1)
-                .password(password1)
-                .text(text1)
-                .build();
-        Long commentId = commentService.saveComments(postId, commentSaveRequestDto);
-
-        //when
-        String inputPass = password1;
-        if (commentService.checkCommentPassword(inputPass, commentId)) {
-            commentService.deleteComment(commentId);
-        }
+        commentService.deleteComment(commentId);
 
         //then
         List<Comment> commentList = commentRepository.findAll();
@@ -138,33 +117,26 @@ public class CommentServiceTest {
     }
 
     @Test
-    public void 댓글삭제_실패() {
+    public void 작성자중복확인() {
         //given
-        String title = "test title";
-        String content = "test content";
-        PostForm requestDto = new PostForm();
-        requestDto.setTitle(title);
-        requestDto.setContent(content);
-        Long postId = postService.savePost(requestDto);
-
         String username1 = "user1";
-        String password1 = "pass1";
         String text1 = "text1";
-        CommentSaveRequestDto commentSaveRequestDto = CommentSaveRequestDto.builder()
-                .username(username1)
-                .password(password1)
-                .text(text1)
-                .build();
-        Long commentId = commentService.saveComments(postId, commentSaveRequestDto);
+        CommentForm form = makeCommentForm(username1, text1);
+        Long id = commentService.saveComments(postId, form);
 
         //when
-        String inputPass = "pass2";
-        if (commentService.checkCommentPassword(inputPass, commentId)) {
-            commentService.deleteComment(commentId);
-        }
+        String username2 = "user2";
 
         //then
-        List<Comment> commentList = commentRepository.findAll();
-        assertEquals(1, commentList.size());
+        assertEquals(commentService.checkUniqueUsername(username2, postId), false);
+        assertEquals(commentService.checkUniqueUsername(username1, postId), true);
+
+    }
+
+    private CommentForm makeCommentForm(String username, String text) {
+        CommentForm form = new CommentForm();
+        form.setUsername(username);
+        form.setText(text);
+        return form;
     }
 }
