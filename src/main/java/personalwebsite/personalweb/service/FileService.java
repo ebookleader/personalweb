@@ -144,7 +144,7 @@ public class FileService {
     }
 
     /**
-     * 수정 전 - 수정 후 내용을 비교하여 삭제된 이미지 정보를 DB에서 제거한다.
+     * 수정 전 <-> 수정 후 내용을 비교하여 삭제된 이미지 정보를 DB에서 제거한다.
      * @param postId post id
      * @param content 수정된 게시글 내용
      */
