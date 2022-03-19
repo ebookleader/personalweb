@@ -59,7 +59,13 @@ public class PostService {
         List<PostListResponseDto> postList = new ArrayList<>();
         for (Post post : allPosts) {
             UploadFile thumbnail = fileRepository.findFirstByPostId(post.getId());
-            PostListResponseDto dto = new PostListResponseDto(post, thumbnail.getId());
+            PostListResponseDto dto;
+            if (thumbnail == null) {
+                dto = new PostListResponseDto(post, null);
+            }
+            else {
+                dto = new PostListResponseDto(post, thumbnail.getId());
+            }
             postList.add(dto);
         }
         return postList;

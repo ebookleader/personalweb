@@ -30,12 +30,7 @@ public class HomeController {
     private final CommentService commentService;
     private final FileService fileService;
 
-    /** 지울거 **/
-    @GetMapping(value = "/index")
-    public String index() {
-        return "index";
-    }
-
+    /** 메인페이지로 이동한다. */
     @GetMapping(value = "/")
     public String home(Model model) {
 
@@ -46,52 +41,66 @@ public class HomeController {
 
         List<PostListResponseDto> posts = postService.findAllPosts();
         model.addAttribute("posts", posts);
+
         return "home";
     }
 
-    @GetMapping(value = "/admin/home")
-    public String adminHome(Model model) {
-        SessionUser user = (SessionUser) httpSession.getAttribute("user");
-        if (user != null) {
-            model.addAttribute("userName", user.getName());
-        }
-        List<PostListResponseDto> posts = postService.findAllPosts();
-        model.addAttribute("posts", posts);
-        return "adminHome";
+    /** 로그인페이지로 이동한다. */
+    @GetMapping(value = "/loginPage")
+    public String loginPage() {
+        return "beforeLogin";
     }
 
+
+    /** 게시글 작성 페이지로 이동한다. */
     @GetMapping(value = "/admin/posts/write")
     public String writePost(Model model) {
+
         SessionUser user = (SessionUser) httpSession.getAttribute("user");
         if (user != null) {
             model.addAttribute("userName", user.getName());
         }
+
         model.addAttribute("postForm", new PostForm());
+
         return "writePost";
     }
 
+    /** 게시글 상세 페이지로 이동한다. */
     @GetMapping(value = "/posts/{postId}")
     public String getPostDetail(Model model, @PathVariable Long postId) {
+
         SessionUser user = (SessionUser) httpSession.getAttribute("user");
         if (user != null) {
             model.addAttribute("userName", user.getName());
         }
+        // 게시글 정보
         model.addAttribute("post", postService.findPostById(postId));
-        if (fileService.checkPostHasAttachment(postId)) {
+        if (fileService.checkPostHasAttachment(postId)) { // 첨부파일이 있는 경우
             model.addAttribute("attach", fileService.findReferenceByPostId(postId));
         }
-        model.addAttribute("commentForm", new CommentForm());
+        // 댓글 정보
+        CommentForm commentForm = new CommentForm();
+        if (user != null) {
+            commentForm.setUsername(user.getName());
+        }
+        model.addAttribute("commentForm", commentForm); // 댓글 저장 form
+
         List<CommentListResponseDto> comments = commentService.findAllComments(postId);
         model.addAttribute("comments", comments);
+
         return "postDetail";
     }
 
+    /** 게시글 수정 페이지로 이동한다. */
     @GetMapping(value = "/admin/posts/update/{postId}")
     public String updatePostForm(Model model, @PathVariable Long postId) {
+
         SessionUser user = (SessionUser) httpSession.getAttribute("user");
         if (user != null) {
             model.addAttribute("userName", user.getName());
         }
+        // 수정 폼
         model.addAttribute("postForm", postService.getUpdatePostForm(postId));
         return "updatePost";
     }

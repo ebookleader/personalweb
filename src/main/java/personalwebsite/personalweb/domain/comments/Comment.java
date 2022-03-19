@@ -19,7 +19,7 @@ public class Comment extends BaseTimeEntity {
     @Column(name = "comment_id")
     private Long id;
 
-    @Column(unique = true)
+    @Column(nullable = false)
     private String username;
 
     @Column(nullable = false, length = 500)

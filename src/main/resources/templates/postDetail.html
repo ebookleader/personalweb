@@ -17,7 +17,7 @@
 <body>
 <nav class="navbar navbar-expand-lg bg-dark text-uppercase fixed-top" id="mainNav">
     <div class="container">
-        <a class="navbar-brand" href="/admin/home">
+        <a class="navbar-brand" href="/">
             Dev Portfolio
             <span sec:authorize-expr="isAuthenticated()">
                 <span class="text-white-50">[</span>
@@ -31,8 +31,8 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarResponsive">
             <ul class="navbar-nav ms-auto">
-                <li class="nav-item mx-0 mx-lg-1"><a class="nav-link py-3 px-0 px-lg-3 rounded" href="/admin/home">Portfolio</a></li>
-                <li class="nav-item mx-0 mx-lg-1"><a class="nav-link py-3 px-0 px-lg-3 rounded" href="/admin/home">About</a></li>
+                <li class="nav-item mx-0 mx-lg-1"><a class="nav-link py-3 px-0 px-lg-3 rounded" href="/">Portfolio</a></li>
+                <li class="nav-item mx-0 mx-lg-1"><a class="nav-link py-3 px-0 px-lg-3 rounded" href="/">About</a></li>
                 <li class="nav-item mx-0 mx-lg-1" sec:authorize-expr="isAuthenticated()">
                     <a class="nav-link py-3 px-0 px-lg-3 rounded" href="/admin/posts/write">write post</a>
                 </li>
@@ -56,7 +56,7 @@
                         <!-- Post meta content-->
                         <div class="mb-4 mt-3">
                             <div class="text-muted fst-italic mb-2 mt-3 float-start">Posted on <span th:text="${post.modifiedDate}">Date</span></div>
-                            <form sec:authorize-expr="isAuthenticated()" method="post" th:action="'/admin/api/posts/'+${post.id}" class="float-end">
+                            <form sec:authorize-expr="isAuthenticated()" method="post" th:action="'/admin/api/posts/'+${post.id}" class="float-end" onsubmit="return confirmPostDelete();">
                                 <input type="hidden" name="_method" value="DELETE">
                                 <button type="submit" class="btn btn-sm btn-danger opacity-50">Delete</button>
                             </form>
@@ -77,25 +77,40 @@
                         </div>
                     </section>
                 </article>
+
                 <!-- Comments section-->
                 <section class="mb-5 mt-4">
                     <div class="card bg-light">
                         <div class="card-body">
+
                             <!-- Comment form-->
-                            <form class="mb-4 mt-3" method="post" th:object="${commentForm}" action="/api/posts/comments" onsubmit="return checkDuplicatedUsername();">
+                            <form sec:authorize-expr="isAnonymous()" class="mb-4 mt-3" method="post" th:object="${commentForm}" action="/api/posts/comments" onsubmit="return !!(checkDuplicatedUsername() & checkCommentFormData());">
                                 <div class="form-row mb-2">
                                     <div class="form-group col-md-6">
                                         <label th:for="username">Username</label>
-                                        <input type="text" class="form-control" th:id="username" name="username" th:field="*{username}" placeholder="Input Username" required maxlength="20">
+                                        <input type="text" class="form-control" th:id="username" name="username" th:field="*{username}" placeholder="Input Username" maxlength="20">
                                     </div>
                                 </div>
                                 <input type="hidden" name="postId" id="postId" th:value="${post.id}">
-                                <textarea class="form-control" rows="3" th:field="*{text}" id="text" name="text" placeholder="Leave a comment" style="resize: none" maxlength="500" required></textarea>
+                                <textarea class="form-control" rows="3" th:field="*{text}" id="text" name="text" placeholder="Leave a comment" style="resize: none" maxlength="500"></textarea>
                                 <button type="submit" class="fw-bold mt-3 btn btn-sm btn-outline-secondary">Submit</button>
                             </form>
+
+                            <form sec:authorize-expr="isAuthenticated()" class="mb-4 mt-3" method="post" th:object="${commentForm}" action="/api/posts/comments" onsubmit="return checkCommentFormData();">
+                                <div class="form-row mb-2">
+                                    <div class="form-group col-md-6">
+                                        <label th:for="username">Username</label>
+                                        <input type="text" class="form-control" th:id="username" name="username" th:field="*{username}" maxlength="20" readonly>
+                                    </div>
+                                </div>
+                                <input type="hidden" name="postId" id="postId" th:value="${post.id}">
+                                <textarea class="form-control" rows="3" th:field="*{text}" id="text" name="text" placeholder="Leave a comment" style="resize: none" maxlength="500"></textarea>
+                                <button type="submit" class="fw-bold mt-3 btn btn-sm btn-outline-secondary">Submit</button>
+                            </form>
+
                             <hr class="mt-3 mb-5">
 
-                            <!-- Single comment-->
+                            <!-- All comment -->
                             <div class="">
                                 <div class="ms-3">
                                     <div class="mb-3" th:each="comment : ${comments}">
@@ -104,7 +119,7 @@
                                         </span>
                                         <span class="text-primary text-opacity-75 pe-2" th:text="${comment.modifiedDate}">modifiedDate</span>
 
-                                        <form sec:authorize-expr="isAuthenticated()" method="post" th:action="'/api/posts/comments/'+${comment.commentId}" class="float-end">
+                                        <form sec:authorize-expr="isAuthenticated()" method="post" th:action="'/admin/api/posts/comments/'+${comment.commentId}" class="float-end" onsubmit="return confirmCommentDelete();">
                                             <input type="hidden" name="_method" value="DELETE">
                                             <input type="hidden" name="postId" th:value="${post.id}">
                                             <button class="btn btn-dark opacity-50 btn-sm" type="submit">delete</button>
@@ -116,18 +131,89 @@
                             </div>
 
                             <script>
+                                /*
+                                    댓글 작성시 중복 닉네임이 입력된 경우 false 리턴
+                                 */
                                 function checkDuplicatedUsername() {
-                                    var commenters = document.getElementsByClassName("commenter");
-                                    var inputName = document.getElementById("username").value;
+                                    var commenters = document.getElementsByClassName("commenter"); // 작성된 모든 댓글의 작성자 이름
+                                    var inputName = document.getElementById("username").value; // 댓글 등록 폼에 입력된 작성자 이름
 
                                     for (i=0; i<commenters.length; i++) {
                                         if (inputName == commenters[i].innerHTML) {
-                                            alert('Please input another name! (duplicated username)')
+                                            alert('Please input another name (duplicated username)')
                                             return false;
                                         }
                                     }
                                     return true;
                                 };
+
+                                /*
+                                    댓글 작성시 입력된 값들이 공백을 포함하거나(username) 공백으로만 이루어져있다면 false 리턴
+                                 */
+                                function checkCommentFormData() {
+
+                                    // username check
+                                    var username = document.getElementById("username");
+                                    if (!checkBlank(username, "username is empty")) {
+                                        return false;
+                                    }
+
+                                    var blank = /[\s]/g; // 문자 사이에 공백이 포함된 경우 체크
+                                    if (blank.test(username.value) == true) {
+                                        alert('username cannot contain blank');
+                                        username.focus();
+                                        return false;
+                                    }
+
+                                    // text check
+                                    if (!checkBlank(document.getElementById("text"), "comment text is empty")) {
+                                        return false;
+                                    }
+
+                                    return true;
+                                };
+
+                                function checkBlank(obj, msg) {
+
+                                    if (obj.value == '' || obj.value == null) { // 값이 입력되지 않은경우
+                                        alert(msg);
+                                        obj.focus();
+                                        return false;
+                                    }
+
+                                    var blank_pattern = /^\s+|\s+$/g;
+                                    if (obj.value.replace(blank_pattern, '') == '') { // 공백만 입력된 경우
+                                        alert(msg);
+                                        obj.focus();
+                                        return false;
+                                    }
+
+                                    return true;
+                                };
+
+                                /*
+                                    게시글 삭제 버튼 클릭시 확인 메시지 출력
+                                 */
+                                function confirmPostDelete() {
+                                    if (!confirm('Are you sure you want to delete the post?\nDeleted post will not be restored.')) {
+                                        return false;
+                                    }
+                                    else { // 확인 버튼 클릭시 삭제 진행
+                                        return true;
+                                    }
+                                };
+
+                                /*
+                                    댓글 삭제 버튼 클릭시 확인 메시지 출력
+                                 */
+                                function confirmCommentDelete() {
+                                    if (!confirm('Are you sure you want to delete the comment?\nDeleted comment will not be restored.')) {
+                                        return false;
+                                    }
+                                    else { // 확인 버튼 클릭시 삭제 진행
+                                        return true;
+                                    }
+                                }
                             </script>
                         </div>
                     </div>
