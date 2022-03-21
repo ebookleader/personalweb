@@ -15,7 +15,7 @@
     <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.js"></script>
 </head>
 <body>
-<nav class="navbar navbar-expand-lg bg-dark text-uppercase fixed-top" id="mainNav">
+<nav class="navbar navbar-expand-lg text-uppercase fixed-top" id="mainNav" style="background-color: #968C83">
     <div class="container">
         <a class="navbar-brand" href="/">
             Dev Portfolio
@@ -43,7 +43,7 @@
         </div>
     </div>
 </nav>
-<section class="page-section portfolio" id="portfolio">
+<section class="page-section portfolio mt-3" id="portfolio">
     <div class="container">
         <div class="row">
             <div class="col-lg-8">
@@ -61,7 +61,7 @@
                                 <button type="submit" class="btn btn-sm btn-danger opacity-50">Delete</button>
                             </form>
                             <form sec:authorize-expr="isAuthenticated()" method="get" th:action="'/admin/posts/update/'+${post.id}" class="float-end pe-1">
-                                <button type="submit" class="btn btn-sm btn-primary opacity-75">Modify</button>
+                                <button type="submit" class="btn btn-sm btn-dark opacity-75">Modify</button>
                             </form>
                         </div>
                         <br>
@@ -79,7 +79,7 @@
                 </article>
 
                 <!-- Comments section-->
-                <section class="mb-5 mt-4">
+                <section class="mb-5 mt-5">
                     <div class="card bg-light">
                         <div class="card-body">
 
@@ -93,7 +93,7 @@
                                 </div>
                                 <input type="hidden" name="postId" id="postId" th:value="${post.id}">
                                 <textarea class="form-control" rows="3" th:field="*{text}" id="text" name="text" placeholder="Leave a comment" style="resize: none" maxlength="500"></textarea>
-                                <button type="submit" class="fw-bold mt-3 btn btn-sm btn-outline-secondary">Submit</button>
+                                <button type="submit" class="fw-bold mt-3 btn btn-sm btn-outline-dark">Submit</button>
                             </form>
 
                             <form sec:authorize-expr="isAuthenticated()" class="mb-4 mt-3" method="post" th:object="${commentForm}" action="/api/posts/comments" onsubmit="return checkCommentFormData();">
@@ -105,7 +105,7 @@
                                 </div>
                                 <input type="hidden" name="postId" id="postId" th:value="${post.id}">
                                 <textarea class="form-control" rows="3" th:field="*{text}" id="text" name="text" placeholder="Leave a comment" style="resize: none" maxlength="500"></textarea>
-                                <button type="submit" class="fw-bold mt-3 btn btn-sm btn-outline-secondary">Submit</button>
+                                <button type="submit" class="fw-bold mt-3 btn btn-sm btn-outline-dark">Submit</button>
                             </form>
 
                             <hr class="mt-3 mb-5">
@@ -262,5 +262,9 @@
         </div>
     </div>
 </section>
+<!-- Copyright Section-->
+<div class="copyright py-4 text-center text-white" style="background-color: #968C83">
+    <div class="container"><small>Copyright &copy; DEV PORTFOLIO 2022</small></div>
+</div>
 </body>
 </html>

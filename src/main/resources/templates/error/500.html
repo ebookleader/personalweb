@@ -17,18 +17,22 @@
 </head>
 <body>
 <!-- Navigation-->
-<nav class="navbar navbar-expand-lg bg-dark text-uppercase fixed-top" id="mainNav">
+<nav class="navbar navbar-expand-lg text-uppercase fixed-top" id="mainNav" style="background-color: #968C83">
     <div class="container">
         <h2 class="navbar-brand">Dev Portfolio</h2>
     </div>
 </nav>
-<div class="masthead bg-success bg-opacity-50 text-white text-center">
+<div class="masthead text-center">
     <div class="container d-flex align-items-center flex-column mt-5 mb-5">
         <img class="masthead-avatar mt-5" src="/assets/img/errorIcon.png" alt="..." style="width: 130px; height: 130px;"/>
 <!--        <h2 class="masthead-heading mb-0" th:text="${status+'ERROR'}">status</h2>-->
-        <h2 class="masthead-subheading fw-bold fs-2 mb-5 mt-5 pb-5" th:text="${message}">message</h2>
-        <a href="/" role="button" class="btn btn-lg btn-success">Back To Main</a>
+        <h4 class="masthead-subheading fw-bold mb-5 mt-5 pb-5" th:text="${message}" style="color: #2b2b2b">message</h4>
+        <a href="/" role="button" class="btn btn-lg btn-dark">Back To Main</a>
     </div>
+</div>
+<!-- Copyright Section-->
+<div class="copyright py-4 text-center text-white" style="background-color: #968C83">
+    <div class="container"><small>Copyright &copy; DEV PORTFOLIO 2022</small></div>
 </div>
 </body>
 </html>

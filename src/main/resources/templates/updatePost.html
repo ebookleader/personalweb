@@ -15,7 +15,7 @@
   <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.js"></script>
 </head>
 <body>
-<nav class="navbar navbar-expand-lg bg-dark text-uppercase fixed-top" id="mainNav">
+<nav class="navbar navbar-expand-lg text-uppercase fixed-top" id="mainNav" style="background-color: #968C83">
   <div class="container">
     <a class="navbar-brand" href="/">
       Dev Portfolio
@@ -45,7 +45,7 @@
   </div>
 </nav>
 <section class="page-section portfolio" id="portfolio">
-  <div class="container">
+  <div class="container mt-4">
     <form action="/admin/api/posts/" method="POST" th:object="${postForm}">
       <br style="clear: both">
       <h3 style="margin-top: 10px; margin-bottom: 25px; font-size: 35px;">Update Post</h3>
@@ -65,8 +65,8 @@
         <textarea class="form-control" id="summernote" name="content" th:field="*{content}" rows="7"></textarea>
       </div>
       <div class="mt-4">
-        <button type="submit" id="submit" name="submit" class="btn btn-secondary">Submit</button>
-        <a role="button" href="/" class="btn btn-dark">Cancel</a>
+        <button type="submit" id="submit" name="submit" class="btn btn-dark">Submit</button>
+        <a role="button" href="/" class="btn btn-dark opacity-75">Cancel</a>
       </div>
     </form>
     <script>
