@@ -54,7 +54,7 @@ public class CustomOauth2UserService implements OAuth2UserService<OAuth2UserRequ
         if (user == null) { // 해당 유저가 없을경우
             List<User> allUser = userRepository.findAll(); // 가입되어있는 모든 유저 정보 가져옴
             if (!allUser.isEmpty()) {   // 1명 가입되어있지만 이메일이 다를경우 exception 처리
-                throw new RestException(HttpStatus.NOT_FOUND, "이미 다른 아이디로 가입되어 있습니다.");
+                throw new RestException(HttpStatus.NOT_FOUND, "You are already registered with a different ID");
             }
             user = attributes.toEntity(); // 가입된 유저가 한명도 없는경우로, 새로 회원가입
 
