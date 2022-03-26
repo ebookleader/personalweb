@@ -9,9 +9,11 @@ public interface UploadFileRepository extends JpaRepository<UploadFile, Long> {
 
     UploadFile findFirstByPostId(Long postId);
 
-    List<UploadFile> findAllByPostId(Long postId);
+    List<UploadFile> findAllByPostIdAndReferenceIsNull(Long postId);
 
     UploadFile findByPostIdAndReference(Long postId, String reference);
+
+    UploadFile findFirstByPostIdAndReferenceIsNull(Long postId);
 
     @Transactional
     void deleteByPostId(Long postId);

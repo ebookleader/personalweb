@@ -150,7 +150,7 @@ public class FileService {
      */
     @Transactional
     public void deleteRemovedFile(Long postId, String content) {
-        List<UploadFile> allFile = fileRepository.findAllByPostId(postId);
+        List<UploadFile> allFile = fileRepository.findAllByPostIdAndReferenceIsNull(postId);
         List<Long> newContentImageId = new ArrayList<>();
 
         Document doc = Jsoup.parse(content);

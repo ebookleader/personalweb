@@ -58,7 +58,7 @@ public class PostService {
         List<Post> allPosts = postRepository.findAll();
         List<PostListResponseDto> postList = new ArrayList<>();
         for (Post post : allPosts) {
-            UploadFile thumbnail = fileRepository.findFirstByPostId(post.getId());
+            UploadFile thumbnail = fileRepository.findFirstByPostIdAndReferenceIsNull(post.getId()); // 첨부파일 x & 게시글에 포함된 이미지 중 첫번째 이미지
             PostListResponseDto dto;
             if (thumbnail == null) {
                 dto = new PostListResponseDto(post, null);
