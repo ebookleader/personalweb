@@ -1,6 +1,5 @@
 package personalwebsite.personalweb.web;
 
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.InputStreamResource;
@@ -51,6 +50,7 @@ public class PostApiController {
             uploadFile.setPostId(postId);
         }
 
+        fileService.transferFile("D:\\springboot_project\\summernote_image\\", postForm.getContent()); // 임시 저장된 이미지 처리
         fileService.setPostIdForImage(postId, postForm.getContent()); // content에 포함된 <img>태그의 이미지 id에 postId set
 
         return "redirect:/posts/" + postId;
@@ -64,7 +64,7 @@ public class PostApiController {
     @PostMapping(value = "/uploadSummernoteImage")
     public ResponseEntity<?> uploadSummernoteImage(@RequestParam("file") MultipartFile file) {
         try {
-            UploadFile uploadFile = fileService.storeFile("D:\\springboot_project\\summernote_image\\", file);
+            UploadFile uploadFile = fileService.storeFile("D:\\springboot_project\\temp_summernote_image\\", file);
             return ResponseEntity.ok().body("/summernoteImage/" + uploadFile.getId());
         } catch (Exception e) {
             e.printStackTrace();
@@ -134,7 +134,7 @@ public class PostApiController {
     public String updatePost(@ModelAttribute PostForm postForm) {
         Long updateId = postService.updatePost(postForm.getId(), postForm);
 
-        fileService.deleteRemovedFile(updateId, postForm.getContent()); // 수정전에 저장된 이미지들 DB에서 삭제
+        fileService.updateFile("D:\\springboot_project\\summernote_image\\", updateId, postForm.getContent()); // 수정전에 저장된 이미지들 DB에서 삭제
 
         fileService.setPostIdForImage(updateId, postForm.getContent()); // 이미지에 postId set
         return "redirect:/posts/" + updateId;

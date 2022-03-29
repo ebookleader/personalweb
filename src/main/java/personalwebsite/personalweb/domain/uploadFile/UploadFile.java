@@ -35,20 +35,28 @@ public class UploadFile {
 
     private String reference; // null or yes
 
+    private String temp; // null or yes
+
     private Long postId;
 
     @Builder
-    public UploadFile(String fileName, String filePath, String saveFileName, LocalDateTime registerDate, Long size, String reference) {
+    public UploadFile(String fileName, String filePath, String saveFileName, LocalDateTime registerDate, Long size, String reference, String temp) {
         this.fileName = fileName;
         this.filePath = filePath;
         this.saveFileName = saveFileName;
         this.registerDate = registerDate;
         this.size = size;
         this.reference = reference;
+        this.temp = temp;
     }
 
     public void setPostId(Long postId) {
         this.postId = postId;
+    }
+
+    public void setTempAndFilePath(String temp, String filePath) {
+        this.temp = temp;
+        this.filePath = filePath;
     }
 
 }

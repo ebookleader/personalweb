@@ -27,6 +27,7 @@ import org.assertj.core.api.Assertions;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertNotEquals;
 
 
 @RunWith(SpringRunner.class)
@@ -53,6 +54,7 @@ public class FileServiceTest {
 
     MockMultipartFile imageFile = new MockMultipartFile("testImage", "testImage.png", "image/png", "<<png data>>".getBytes());
     String rootLocation_image = "D:\\springboot_project_test\\summernote_image\\";
+    String rootLocation_temp_image = "D:\\springboot_project_test\\temp_summernote_image\\";
     String rootLocation_other = "D:\\springboot_project_test\\attachments\\";
 
     @Before()
@@ -106,7 +108,44 @@ public class FileServiceTest {
         assertThat(file2.getFilePath(), containsString("attachments"));
         assertEquals(null, file1.getReference());
         assertEquals("yes", file2.getReference());
+        assertEquals("yes", file1.getTemp());
     }
+
+    @Test
+    public void 파일이동() throws Exception {
+        //given
+        UploadFile uploadFile_image1 = fileService.storeFile(rootLocation_temp_image, imageFile);
+        String beforePath = uploadFile_image1.getFilePath();
+
+        String content = "<img src=\"/summernoteImage/"+uploadFile_image1.getId()+"\">";
+
+        //when
+        fileService.moveFile(rootLocation_image, content);
+
+        //then
+        assertNotEquals(beforePath, uploadFile_image1.getFilePath());
+        assertEquals(null, uploadFile_image1.getTemp());
+    }
+
+    @Test
+    public void 파일삭제() throws Exception {
+        //given
+        UploadFile uploadFile_image1 = fileService.storeFile(rootLocation_temp_image, imageFile);
+        UploadFile uploadFile_image2 = fileService.storeFile(rootLocation_temp_image, imageFile);
+
+        String content = "<img src=\"/summernoteImage/"+uploadFile_image2.getId()+"\">";
+
+        fileService.moveFile(rootLocation_image, content);
+
+        //when
+        fileService.deleteFile();
+
+        //then
+        List<UploadFile> all = fileRepository.findAll(); // 1은 tmpdir에서 삭제, 2는 원래dir로, 1은 repo에서 삭제
+        assertEquals(1, all.size());
+        assertEquals(all.get(0).getTemp(), null);
+    }
+
 
     @Test
     public void 파일번호설정() {
@@ -181,30 +220,33 @@ public class FileServiceTest {
         UploadFile file1 = null;
         UploadFile file2 = null;
         try {
-            file1 = fileService.storeFile(rootLocation_image, imageFile);
-            file2 = fileService.storeFile(rootLocation_image, imageFile);
+            file1 = fileService.storeFile(rootLocation_temp_image, imageFile);
+            file2 = fileService.storeFile(rootLocation_temp_image, imageFile);
         } catch (Exception e) {
             e.printStackTrace();
         }
-
         String content = "<p><img src=\"/summernoteImage/"+
                 file1.getId()+"\" style=\"width: 25%;\"><img src=\"/summernoteImage/"+
                 file2.getId()+"\" style=\"width: 25%;\"><br></p>";
 
+        fileService.transferFile(rootLocation_image, content);
         fileService.setPostIdForImage(postId, content); // 파일 번호 설정
 
         //when
         UploadFile file3 = null;
+        UploadFile file4 = null;
+
         try {
-            file3 = fileService.storeFile(rootLocation_image, imageFile);
+            file3 = fileService.storeFile(rootLocation_temp_image, imageFile);
+            file4 = fileService.storeFile(rootLocation_temp_image, imageFile);
         } catch (Exception e) {
             e.printStackTrace();
         }
         content = "<p><img src=\"/summernoteImage/"+
                 file2.getId()+"\" style=\"width: 25%;\"><img src=\"/summernoteImage/"+
-                file3.getId()+"\" style=\"width: 25%;\"><br></p>";
+                file3.getId()+"\" style=\"width: 25%;\"><br></p>"; // 게시글 내용 수정
 
-        fileService.deleteRemovedFile(postId, content);
+        fileService.updateFile(rootLocation_image, postId, content);
         fileService.setPostIdForImage(postId, content);
 
         //then
@@ -213,7 +255,11 @@ public class FileServiceTest {
         for (UploadFile file : files) {
             idList.add(file.getId());
         }
+        assertEquals(files.size(), 2);
         Assertions.assertThat(idList).containsOnly(file2.getId(), file3.getId());
+        assertEquals(files.get(0).getTemp(), null);
+        assertEquals(files.get(1).getTemp(), null);
+        assertEquals(file3.getPostId(), file2.getPostId());
     }
 
 

@@ -40,8 +40,10 @@ public class FileService {
             }
             String saveFileName = fileSave(fileRoot, file);
             String reference = null;
+            String temp = "yes";
             if (fileRoot.contains("attachments")) {
                 reference = "yes";
+                temp = null;
             }
             UploadFile saveFile = UploadFile.builder()
                     .fileName(file.getOriginalFilename())
@@ -50,6 +52,7 @@ public class FileService {
                     .size(file.getResource().contentLength())
                     .registerDate(LocalDateTime.now())
                     .reference(reference)
+                    .temp(temp)
                     .build();
             fileRepository.save(saveFile);
             return saveFile;
@@ -62,7 +65,7 @@ public class FileService {
      * UUID를 생성해 파일 이름을 새로 생성하고 파일을 저장한 뒤 저장된 파일 명을 리턴한다.
      * @param rootLocation 상위 주소
      * @param file 저장할 파일
-     * @return
+     * @return 저장된 파일명
      * @throws IOException
      */
     private String fileSave(String rootLocation, MultipartFile file) throws IOException {
@@ -75,6 +78,66 @@ public class FileService {
         FileCopyUtils.copy(file.getBytes(), saveFile); // 입력파일내용을 출력파일에 복사
 
         return saveFileName;
+    }
+
+    /**
+     * 게시글 작성이 완료되면 임시 폴더에 저장된 이미지를 지정폴더로 이동시키고 임시폴더 내용을 삭제한다.
+     * @param saveFileRoot 지정폴더
+     * @param content 게시글 내용
+     */
+    @Transactional
+    public void transferFile(String saveFileRoot, String content) {
+        moveFile(saveFileRoot, content);
+        deleteFile();
+    }
+
+    /**
+     * 내용에 포함된 이미지는 지정폴더로 이동시키고 temp와 filePath를 업데이트한다.
+     * @param newDir 지정폴더
+     * @param content 게시글 내용
+     */
+    @Transactional
+    public void moveFile(String newDir, String content) {
+
+        Document doc = Jsoup.parse(content);
+        Elements imgTags = doc.select("img");
+
+        for (Element el : imgTags) { // 내용에 포함된 이미지
+            String imgSrc = el.attr("src");
+            Long imgId = Long.parseLong(imgSrc.substring(17)); // 17 ~
+            UploadFile uploadFile = fileRepository.findById(imgId)
+                    .orElseThrow(() -> new IllegalArgumentException("해당 이미지가 없습니다. id = " + imgId));
+
+            File dirPath = new File(newDir); // 지정 폴더
+            if (!dirPath.exists()) { // 폴더가 없으면 폴더 생성
+                dirPath.mkdirs();
+            }
+            try {
+                File oldFile = new File(uploadFile.getFilePath()); // 이동시킬 파일
+                String newFilePath = newDir + File.separator + uploadFile.getSaveFileName();
+                oldFile.renameTo(new File(newFilePath));
+                uploadFile.setTempAndFilePath(null, newFilePath);
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * 내용에 포함되지 않은 이미지는 임시폴더에서 삭제하고 db 정보를 삭제한다.
+     */
+    @Transactional
+    public void deleteFile() {
+        List<UploadFile> files = fileRepository.findAllByTempIsNotNull();
+        for (UploadFile uploadFile : files) {
+            String filePath = uploadFile.getFilePath();
+            File file = new File(filePath);
+            if(file.exists()) {
+                file.delete();  // 저장된 파일 삭제
+                fileRepository.delete(uploadFile);
+            }
+        }
     }
 
     /**
@@ -144,14 +207,15 @@ public class FileService {
     }
 
     /**
-     * 수정 전 <-> 수정 후 내용을 비교하여 삭제된 이미지 정보를 DB에서 제거한다.
+     * 수정 전 <-> 수정 후 내용을 비교하여 삭제된 이미지와 새로 추가된 이미지를 처리한다.
      * @param postId post id
      * @param content 수정된 게시글 내용
      */
     @Transactional
-    public void deleteRemovedFile(Long postId, String content) {
-        List<UploadFile> allFile = fileRepository.findAllByPostIdAndReferenceIsNull(postId);
-        List<Long> newContentImageId = new ArrayList<>();
+    public void updateFile(String saveRoot, Long postId, String content) {
+
+        List<UploadFile> allFile = fileRepository.findAllByPostIdAndReferenceIsNull(postId); // 기존 저장되어있던 모든 파일
+        List<Long> newContentImageId = new ArrayList<>(); // 수정된 게시글에 포함된 모든 파일의 id
 
         Document doc = Jsoup.parse(content);
         Elements imgTags = doc.select("img");
@@ -161,10 +225,41 @@ public class FileService {
             newContentImageId.add(imgId);
         }
 
+        // 삭제된 이미지 처리
         for (UploadFile file : allFile) {
             if (!newContentImageId.contains(file.getId())) { // 수정 전 존재했던 이미지가 삭제됐다면
-                fileRepository.deleteById(file.getId()); // DB에서 해당 파일 정보를 삭제
+                File fi = new File(file.getFilePath());
+                if(fi.exists()) {
+                    fi.delete();  // 저장된 파일 삭제
+                    fileRepository.deleteById(file.getId()); // DB 정보 삭제
+                }
+            }
+            else {
+                newContentImageId.remove(file.getId());
             }
         }
+
+        // 새로 추가된 이미지 처리
+        for (Long imgId : newContentImageId) {
+            UploadFile uploadFile = fileRepository.findById(imgId)
+                    .orElseThrow(() -> new IllegalArgumentException("해당 이미지가 없습니다. id = " + imgId));
+
+            File dirPath = new File(saveRoot);
+            if (!dirPath.exists()) {
+                dirPath.mkdirs();
+            }
+            try {   // 지정 폴더로 이동
+                File oldFile = new File(uploadFile.getFilePath()); // 이동시킬 파일
+                String newFilePath = saveRoot + File.separator + uploadFile.getSaveFileName();
+                oldFile.renameTo(new File(newFilePath));
+                uploadFile.setTempAndFilePath(null, newFilePath);
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        // 임시 폴더 비우기
+        deleteFile();
     }
 }
