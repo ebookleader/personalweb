@@ -1,6 +1,10 @@
 package personalwebsite.personalweb.service;
 
 import lombok.RequiredArgsConstructor;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import personalwebsite.personalweb.config.auth.dto.SessionUser;
@@ -15,6 +19,7 @@ import personalwebsite.personalweb.web.dto.posts.PostResponseDto;
 import personalwebsite.personalweb.web.dto.posts.PostForm;
 
 import javax.servlet.http.HttpSession;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -57,8 +62,17 @@ public class PostService {
     public List<PostListResponseDto> findAllPosts() {
         List<Post> allPosts = postRepository.findAll();
         List<PostListResponseDto> postList = new ArrayList<>();
+
         for (Post post : allPosts) {
-            UploadFile thumbnail = fileRepository.findFirstByPostIdAndReferenceIsNull(post.getId()); // 첨부파일 x & 게시글에 포함된 이미지 중 첫번째 이미지
+            Document doc = Jsoup.parse(post.getContent());
+            Element el = doc.select("img").first();
+            UploadFile thumbnail = null;
+            if (el != null) {
+                Long imgId = Long.parseLong(el.attr("src").substring(17)); // 17 ~
+                thumbnail = fileRepository.findById(imgId)
+                        .orElseThrow(() -> new IllegalArgumentException("해당 이미지가 없습니다. id = " + imgId)); // 첨부파일 x & 게시글에 포함된 이미지 중 첫번째 이미지
+            }
+
             PostListResponseDto dto;
             if (thumbnail == null) {
                 dto = new PostListResponseDto(post, null);
