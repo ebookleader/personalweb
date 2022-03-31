@@ -38,6 +38,9 @@ public class Post extends BaseTimeEntity {
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL)
     private List<Comment> comments = new ArrayList<>();
 
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL)
+    private List<UploadFile> uploadFiles = new ArrayList<>();
+
     @Builder
     public Post(String title, String content, String summary) {
         this.title = title;

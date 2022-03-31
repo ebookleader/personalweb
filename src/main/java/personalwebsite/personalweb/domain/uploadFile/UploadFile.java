@@ -37,7 +37,9 @@ public class UploadFile {
 
     private String temp; // null or yes
 
-    private Long postId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "post_id")
+    private Post post;
 
     @Builder
     public UploadFile(String fileName, String filePath, String saveFileName, LocalDateTime registerDate, Long size, String reference, String temp) {
@@ -50,8 +52,8 @@ public class UploadFile {
         this.temp = temp;
     }
 
-    public void setPostId(Long postId) {
-        this.postId = postId;
+    public void setPost(Post post) {
+        this.post = post;
     }
 
     public void setTempAndFilePath(String temp, String filePath) {

@@ -47,11 +47,11 @@ public class PostApiController {
 
         if (!file.isEmpty()) { // 첨부파일이 게시글에 포함된 경우 첨부파일을 저장해준다.
             UploadFile uploadFile = fileService.storeFile("D:\\springboot_project\\attachments\\", file);
-            uploadFile.setPostId(postId);
+            fileService.setPostForFile(postId, uploadFile);
         }
 
         fileService.transferFile("D:\\springboot_project\\summernote_image\\", postForm.getContent()); // 임시 저장된 이미지 처리
-        fileService.setPostIdForImage(postId, postForm.getContent()); // content에 포함된 <img>태그의 이미지 id에 postId set
+        fileService.setPostForImage(postId, postForm.getContent()); // content에 포함된 <img>태그의 이미지 id에 postId set
 
         return "redirect:/posts/" + postId;
     }
@@ -117,7 +117,6 @@ public class PostApiController {
     public ModelAndView deletePost(@PathVariable Long postId, ModelAndView mav) {
 
         postService.deletePost(postId); // 게시글 삭제
-        fileService.deleteAllFileByPostId(postId); // 게시글과 함께 저장된 이미지 & 첨부파일 삭제
 
         mav.addObject("data", new Message("Your post has been deleted.", "/"));
         mav.setViewName("message");
@@ -135,8 +134,8 @@ public class PostApiController {
         Long updateId = postService.updatePost(postForm.getId(), postForm);
 
         fileService.updateFile("D:\\springboot_project\\summernote_image\\", updateId, postForm.getContent()); // 수정전에 저장된 이미지들 DB에서 삭제
+        fileService.setPostForImage(updateId, postForm.getContent()); // 이미지에 postId set
 
-        fileService.setPostIdForImage(updateId, postForm.getContent()); // 이미지에 postId set
         return "redirect:/posts/" + updateId;
     }
 

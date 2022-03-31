@@ -14,6 +14,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import personalwebsite.personalweb.config.auth.dto.SessionUser;
+import personalwebsite.personalweb.domain.posts.Post;
+import personalwebsite.personalweb.domain.posts.PostRepository;
 import personalwebsite.personalweb.domain.uploadFile.UploadFile;
 import personalwebsite.personalweb.domain.uploadFile.UploadFileRepository;
 import personalwebsite.personalweb.domain.user.Role;
@@ -46,6 +48,9 @@ public class FileServiceTest {
 
     @Autowired
     UploadFileRepository fileRepository;
+
+    @Autowired
+    PostRepository postRepository;
 
     private User user;
     private Long postId;
@@ -85,10 +90,11 @@ public class FileServiceTest {
         session.clearAttributes();
         session = null;
         fileRepository.deleteAll();
+        postRepository.deleteAll();
         userRepository.deleteAll();
     }
 
-    @Test
+    @Test()
     public void 파일저장_불러오기() throws Exception {
         //given
 
@@ -161,11 +167,11 @@ public class FileServiceTest {
                 uploadFile_image.getId()+"\" style=\"width: 25%;\"><br></p>";
 
         //when
-        fileService.setPostIdForImage(postId, content);
+        fileService.setPostForImage(postId, content);
 
         //then
         UploadFile file = fileService.loadFile(uploadFile_image.getId());
-        assertEquals(file.getPostId(), postId);
+        assertEquals(file.getPost().getId(), postId);
     }
 
     @Test
@@ -180,8 +186,11 @@ public class FileServiceTest {
             e.printStackTrace();
         }
 
-        uploadFile_image.setPostId(postId);
-        uploadFile_other.setPostId(postId);
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("no post for "+postId));
+
+        uploadFile_image.setPost(post);
+        uploadFile_other.setPost(post);
 
         //when
         FileResponseDto responseDto = fileService.findReferenceByPostId(postId);
@@ -204,13 +213,17 @@ public class FileServiceTest {
             e.printStackTrace();
         }
 
-        uploadFile1.setPostId(postId);
-        uploadFile2.setPostId(postId);
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("no post for "+postId));
+
+        uploadFile1.setPost(post);
+        uploadFile2.setPost(post);
 
         //when
-        fileService.deleteAllFileByPostId(postId);
+        postService.deletePost(postId);
 
         //then
+        assertEquals(0, postRepository.findAll().size());
         assertEquals(0, fileRepository.findAllByPostId(postId).size());
     }
 
@@ -230,7 +243,7 @@ public class FileServiceTest {
                 file2.getId()+"\" style=\"width: 25%;\"><br></p>";
 
         fileService.transferFile(rootLocation_image, content);
-        fileService.setPostIdForImage(postId, content); // 파일 번호 설정
+        fileService.setPostForImage(postId, content); // 파일 번호 설정
 
         //when
         UploadFile file3 = null;
@@ -247,7 +260,7 @@ public class FileServiceTest {
                 file3.getId()+"\" style=\"width: 25%;\"><br></p>"; // 게시글 내용 수정
 
         fileService.updateFile(rootLocation_image, postId, content);
-        fileService.setPostIdForImage(postId, content);
+        fileService.setPostForImage(postId, content);
 
         //then
         List<UploadFile> files = fileRepository.findAllByPostId(postId);
@@ -259,7 +272,7 @@ public class FileServiceTest {
         Assertions.assertThat(idList).containsOnly(file2.getId(), file3.getId());
         assertEquals(files.get(0).getTemp(), null);
         assertEquals(files.get(1).getTemp(), null);
-        assertEquals(file3.getPostId(), file2.getPostId());
+        assertEquals(file3.getPost().getId(), file2.getPost().getId());
     }
 
 

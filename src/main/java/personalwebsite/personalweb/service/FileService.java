@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.FileCopyUtils;
 import org.springframework.web.multipart.MultipartFile;
+import personalwebsite.personalweb.domain.posts.Post;
+import personalwebsite.personalweb.domain.posts.PostRepository;
 import personalwebsite.personalweb.domain.uploadFile.UploadFile;
 import personalwebsite.personalweb.domain.uploadFile.UploadFileRepository;
 import personalwebsite.personalweb.web.dto.FileResponseDto;
@@ -24,6 +26,7 @@ import java.util.UUID;
 public class FileService {
 
     private final UploadFileRepository fileRepository;
+    private final PostRepository postRepository;
 
     /**
      * 파일 저장: 파일을 저장하고 DB에 파일 정보를 저장한 뒤 저장한 파일을 리턴한다.
@@ -180,7 +183,8 @@ public class FileService {
      * @param content 게시글 내용
      */
     @Transactional
-    public void setPostIdForImage(Long postId, String content) {
+    public void setPostForImage(Long postId, String content) {
+        Post post = postRepository.findById(postId).orElseThrow(() -> new IllegalArgumentException("해당 포스트가 없습니다. id = " + postId));
         Document doc = Jsoup.parse(content);
         Elements imgTags = doc.select("img");
         for (Element el : imgTags) {
@@ -189,21 +193,18 @@ public class FileService {
             Long imgId = Long.parseLong(imgSrc.substring(17)); // 17 ~
             UploadFile uploadFile = fileRepository.findById(imgId)
                     .orElseThrow(() -> new IllegalArgumentException("해당 이미지가 없습니다. id = " + imgId));
-            uploadFile.setPostId(postId);
+            uploadFile.setPost(post);
         }
     }
 
     /**
-     * 게시글에 포함된 파일을 전부 삭제한다.
-     * @param postId
+     * 이미지 파일에 post를 설정해준다.
+     * @param postId post id
+     * @param file 이미지 파일
      */
-    @Transactional
-    public void deleteAllFileByPostId(Long postId) {
-        Long file_cnt = fileRepository.countByPostId(postId);
-        if (file_cnt > 0) {
-            System.out.println("file delete start");
-            fileRepository.deleteByPostId(postId);
-        }
+    public void setPostForFile(Long postId, UploadFile file) {
+        Post post = postRepository.findById(postId).orElseThrow(() -> new IllegalArgumentException("해당 포스트가 없습니다. id = " + postId));
+        file.setPost(post);
     }
 
     /**
