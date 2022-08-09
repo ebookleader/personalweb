@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
@@ -23,8 +23,9 @@
 </head>
 <body style="background-color: #DAD0C2">
 <h2 class="d-flex justify-content-center fw-bold fs-1" style="margin-top: 8em;">DEV PORTFOLIO</h2>
+<h4 class="d-flex justify-content-center masthead-subheading fw-bold mt-5" th:text="${errorMessage}" style="color: #dc3545">message</h4>
 <div class="container d-flex justify-content-center p-5">
-  <a href="/oauth2/authorization/google" role="button" class="btn btn-lg btn-success">Google Login</a>
+    <a href="/oauth2/authorization/google" role="button" class="btn btn-lg btn-success">Google Login</a>
 </div>
 
 <!-- Bootstrap core JS-->

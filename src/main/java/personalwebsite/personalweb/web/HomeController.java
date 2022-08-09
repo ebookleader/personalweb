@@ -6,17 +6,16 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import personalwebsite.personalweb.config.auth.dto.SessionUser;
-import personalwebsite.personalweb.domain.posts.Post;
+import personalwebsite.personalweb.exception.ErrorCode;
 import personalwebsite.personalweb.service.CommentService;
 import personalwebsite.personalweb.service.FileService;
 import personalwebsite.personalweb.service.PostService;
-import personalwebsite.personalweb.web.dto.FileResponseDto;
 import personalwebsite.personalweb.web.dto.comments.CommentForm;
 import personalwebsite.personalweb.web.dto.comments.CommentListResponseDto;
 import personalwebsite.personalweb.web.dto.posts.PostListResponseDto;
 import personalwebsite.personalweb.web.dto.posts.PostForm;
-
 import javax.servlet.http.HttpSession;
 import java.util.List;
 
@@ -47,7 +46,10 @@ public class HomeController {
 
     /** 로그인페이지로 이동한다. */
     @GetMapping(value = "/loginPage")
-    public String loginPage() {
+    public String loginPage(@RequestParam(defaultValue = "false") String error, Model model) {
+        if (error.equals("true")) {
+            model.addAttribute("errorMessage", ErrorCode.ALREADY_SIGNUP.getMessage());
+        }
         return "beforeLogin";
     }
 

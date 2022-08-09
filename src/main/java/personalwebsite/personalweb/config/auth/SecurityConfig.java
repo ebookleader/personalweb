@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import personalwebsite.personalweb.config.CustomFailureHandler;
 import personalwebsite.personalweb.domain.user.Role;
 
 @RequiredArgsConstructor
@@ -11,6 +12,7 @@ import personalwebsite.personalweb.domain.user.Role;
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     private final CustomOauth2UserService customOauth2UserService;
+    private final CustomFailureHandler customFailureHandler;
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
@@ -26,6 +28,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                         .logoutSuccessUrl("/")
                 .and()
                     .oauth2Login()
+                        .failureHandler(customFailureHandler)
                         .userInfoEndpoint()
                             .userService(customOauth2UserService);
     }
