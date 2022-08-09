@@ -35,7 +35,7 @@
         <li class="nav-item mx-0 mx-lg-1"><a class="nav-link py-3 px-0 px-lg-3 rounded" href="/">Portfolio</a></li>
         <li class="nav-item mx-0 mx-lg-1"><a class="nav-link py-3 px-0 px-lg-3 rounded" href="/">About</a></li>
         <li class="nav-item mx-0 mx-lg-1" sec:authorize-expr="isAuthenticated()">
-          <a class="nav-link py-3 px-0 px-lg-3 rounded" href="/admin/posts/write">write post</a>
+          <a class="nav-link py-3 px-0 px-lg-3 rounded" href="/admin/posts">write post</a>
         </li>
         <li class="nav-item mx-0 mx-lg-1" sec:authorize-expr="isAuthenticated()">
           <a class="nav-link py-3 px-0 px-lg-3 rounded" href="/logout">LOGOUT</a>
@@ -46,7 +46,7 @@
 </nav>
 <section class="page-section portfolio" id="portfolio">
   <div class="container mt-4">
-    <form action="/admin/api/posts/" method="POST" th:object="${postForm}">
+    <form action="/admin/posts/" method="POST" th:object="${postForm}">
       <br style="clear: both">
       <h3 style="margin-top: 10px; margin-bottom: 25px; font-size: 35px;">Update Post</h3>
       <hr class="mb-4">

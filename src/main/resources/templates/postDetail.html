@@ -34,7 +34,7 @@
                 <li class="nav-item mx-0 mx-lg-1"><a class="nav-link py-3 px-0 px-lg-3 rounded" href="/">Portfolio</a></li>
                 <li class="nav-item mx-0 mx-lg-1"><a class="nav-link py-3 px-0 px-lg-3 rounded" href="/">About</a></li>
                 <li class="nav-item mx-0 mx-lg-1" sec:authorize-expr="isAuthenticated()">
-                    <a class="nav-link py-3 px-0 px-lg-3 rounded" href="/admin/posts/write">write post</a>
+                    <a class="nav-link py-3 px-0 px-lg-3 rounded" href="/admin/posts">write post</a>
                 </li>
                 <li class="nav-item mx-0 mx-lg-1" sec:authorize-expr="isAuthenticated()">
                     <a class="nav-link py-3 px-0 px-lg-3 rounded" href="/logout">LOGOUT</a>
@@ -56,11 +56,11 @@
                         <!-- Post meta content-->
                         <div class="mb-4 mt-3">
                             <div class="text-muted fst-italic mb-2 mt-3 float-start">Posted on <span th:text="${post.modifiedDate}">Date</span></div>
-                            <form sec:authorize-expr="isAuthenticated()" method="post" th:action="'/admin/api/posts/'+${post.id}" class="float-end" onsubmit="return confirmPostDelete();">
+                            <form sec:authorize-expr="isAuthenticated()" method="post" th:action="'/admin/posts/'+${post.id}" class="float-end" onsubmit="return confirmPostDelete();">
                                 <input type="hidden" name="_method" value="DELETE">
                                 <button type="submit" class="btn btn-sm btn-danger opacity-50">Delete</button>
                             </form>
-                            <form sec:authorize-expr="isAuthenticated()" method="get" th:action="'/admin/posts/update/'+${post.id}" class="float-end pe-1">
+                            <form sec:authorize-expr="isAuthenticated()" method="get" th:action="'/admin/updatePost/'+${post.id}" class="float-end pe-1">
                                 <button type="submit" class="btn btn-sm btn-dark opacity-75">Modify</button>
                             </form>
                         </div>
@@ -84,7 +84,7 @@
                         <div class="card-body">
 
                             <!-- Comment form-->
-                            <form sec:authorize-expr="isAnonymous()" class="mb-4 mt-3" method="post" th:object="${commentForm}" action="/api/posts/comments" onsubmit="return !!(checkDuplicatedUsername() & checkCommentFormData());">
+                            <form sec:authorize-expr="isAnonymous()" class="mb-4 mt-3" method="post" th:object="${commentForm}" action="/postComment" onsubmit="return !!(checkDuplicatedUsername() & checkCommentFormData());">
                                 <div class="form-row mb-2">
                                     <div class="form-group col-md-6">
                                         <label th:for="username">Username</label>
@@ -96,7 +96,7 @@
                                 <button type="submit" class="fw-bold mt-3 btn btn-sm btn-outline-dark">Submit</button>
                             </form>
 
-                            <form sec:authorize-expr="isAuthenticated()" class="mb-4 mt-3" method="post" th:object="${commentForm}" action="/api/posts/comments" onsubmit="return checkCommentFormData();">
+                            <form sec:authorize-expr="isAuthenticated()" class="mb-4 mt-3" method="post" th:object="${commentForm}" action="/postComment" onsubmit="return checkCommentFormData();">
                                 <div class="form-row mb-2">
                                     <div class="form-group col-md-6">
                                         <label th:for="username">Username</label>
@@ -119,7 +119,7 @@
                                         </span>
                                         <span class="text-primary text-opacity-75 pe-2" th:text="${comment.modifiedDate}">modifiedDate</span>
 
-                                        <form sec:authorize-expr="isAuthenticated()" method="post" th:action="'/admin/api/posts/comments/'+${comment.commentId}" class="float-end" onsubmit="return confirmCommentDelete();">
+                                        <form sec:authorize-expr="isAuthenticated()" method="post" th:action="'/admin/postComment/'+${comment.commentId}" class="float-end" onsubmit="return confirmCommentDelete();">
                                             <input type="hidden" name="_method" value="DELETE">
                                             <input type="hidden" name="postId" th:value="${post.id}">
                                             <button class="btn btn-dark opacity-50 btn-sm" type="submit">delete</button>

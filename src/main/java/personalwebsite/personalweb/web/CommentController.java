@@ -9,19 +9,18 @@ import personalwebsite.personalweb.config.auth.dto.SessionUser;
 import personalwebsite.personalweb.service.CommentService;
 import personalwebsite.personalweb.web.dto.Message;
 import personalwebsite.personalweb.web.dto.comments.CommentForm;
-
 import javax.servlet.http.HttpSession;
 
 @Controller
 @Slf4j
 @RequiredArgsConstructor
-public class CommentApiController {
+public class CommentController {
 
     private final CommentService commentService;
     private final HttpSession httpSession;
 
     /** 댓글을 저장하고 결과에 따라 결과 메시지와 이동할 주소를 넣은 ModelAndView 객체를 리턴한다. */
-    @PostMapping("/api/posts/comments")
+    @PostMapping("/postComment")
     public ModelAndView saveComment(@RequestParam("postId") Long postId, @ModelAttribute CommentForm commentForm, ModelAndView mav) {
 
         SessionUser user = (SessionUser) httpSession.getAttribute("user");
@@ -46,7 +45,7 @@ public class CommentApiController {
     }
 
     /** 댓글을 삭제하고 삭제 성공 메시지와 이동할 주소를 넣은 ModelAndView 객체를 리턴한다. */
-    @DeleteMapping("/admin/api/posts/comments/{commentId}")
+    @DeleteMapping("/admin/postComment/{commentId}")
     public ModelAndView deleteComment(@RequestParam("postId") Long postId, @PathVariable Long commentId, ModelAndView mav) {
 
         commentService.deleteComment(commentId);

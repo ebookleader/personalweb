@@ -10,29 +10,77 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
+import personalwebsite.personalweb.config.auth.dto.SessionUser;
 import personalwebsite.personalweb.domain.uploadFile.UploadFile;
+import personalwebsite.personalweb.service.CommentService;
 import personalwebsite.personalweb.service.FileService;
 import personalwebsite.personalweb.service.PostService;
 import personalwebsite.personalweb.web.dto.Message;
+import personalwebsite.personalweb.web.dto.comments.CommentForm;
+import personalwebsite.personalweb.web.dto.comments.CommentListResponseDto;
 import personalwebsite.personalweb.web.dto.posts.PostForm;
-
+import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 
 @Controller
 @Slf4j
 @RequiredArgsConstructor
-public class PostApiController {
+public class PostController {
 
+    private final HttpSession httpSession;
     private final PostService postService;
     private final FileService fileService;
+    private final CommentService commentService;
     private final ResourceLoader resourceLoader;
+
+    /** 게시글 상세 페이지로 이동한다. */
+    @GetMapping(value = "/posts/{postId}")
+    public String getPostDetail(Model model, @PathVariable Long postId) {
+
+        SessionUser user = (SessionUser) httpSession.getAttribute("user");
+        if (user != null) {
+            model.addAttribute("userName", user.getName());
+        }
+        // 게시글 정보
+        model.addAttribute("post", postService.findPostById(postId));
+        if (fileService.checkPostHasAttachment(postId)) { // 첨부파일이 있는 경우
+            model.addAttribute("attach", fileService.findReferenceByPostId(postId));
+        }
+        // 댓글 정보
+        CommentForm commentForm = new CommentForm();
+        if (user != null) {
+            commentForm.setUsername(user.getName());
+        }
+        model.addAttribute("commentForm", commentForm); // 댓글 저장 form
+
+        List<CommentListResponseDto> comments = commentService.findAllComments(postId);
+        model.addAttribute("comments", comments);
+
+        return "postDetail";
+    }
+
+    /** 게시글 작성 페이지로 이동한다. */
+    @GetMapping(value = "/admin/posts")
+    public String writePost(Model model) {
+
+        SessionUser user = (SessionUser) httpSession.getAttribute("user");
+        if (user != null) {
+            model.addAttribute("userName", user.getName());
+        }
+
+        model.addAttribute("postForm", new PostForm());
+
+        return "writePost";
+    }
 
     /**
      * 게시글 작성 버튼 클릭시 게시글과 첨부파일을 저장하고 저장한 게시글의 상세페이지로 이동한다.
@@ -40,7 +88,7 @@ public class PostApiController {
      * @param file 첨부파일
      * @return 게시글 저장 후 게시글 상세 페이지로 이동
      */
-    @PostMapping("/admin/api/posts")
+    @PostMapping("/admin/posts")
     public String writePost(@ModelAttribute PostForm postForm, @RequestParam("uploadFile") MultipartFile file) throws Exception {
 
         Long postId = postService.savePost(postForm);
@@ -109,11 +157,39 @@ public class PostApiController {
     }
 
 
+    /** 게시글 수정 페이지로 이동한다. */
+    @GetMapping(value = "/admin/updatePost/{postId}")
+    public String updatePostForm(Model model, @PathVariable Long postId) {
+
+        SessionUser user = (SessionUser) httpSession.getAttribute("user");
+        if (user != null) {
+            model.addAttribute("userName", user.getName());
+        }
+        // 수정 폼
+        model.addAttribute("postForm", postService.getUpdatePostForm(postId));
+        return "updatePost";
+    }
+
+    /**
+     * 수정된 정보로 게시글을 수정하고 수정된 게시글의 상세 페이지로 이동한다.
+     * @param postForm 수정된 게시글 정보를 담은 dto
+     * @return 게시글 상세페이지로 이동
+     */
+    @PutMapping(value = "/admin/posts")
+    public String updatePost(@ModelAttribute PostForm postForm) {
+        Long updateId = postService.updatePost(postForm.getId(), postForm);
+
+        fileService.updateFile("D:\\springboot_project\\summernote_image\\", updateId, postForm.getContent()); // 수정전에 저장된 이미지들 DB에서 삭제
+        fileService.setPostForImage(updateId, postForm.getContent()); // 이미지에 postId set
+
+        return "redirect:/posts/" + updateId;
+    }
+
     /**
      * 게시글 & 게시글과 함께 저장된 파일들을 전부 삭제하고
      *  삭제 성공 메시지와 이동할 주소를 넣은 ModelAndView 객체를 리턴한다.
      */
-    @DeleteMapping(value = "/admin/api/posts/{postId}")
+    @DeleteMapping(value = "/admin/posts/{postId}")
     public ModelAndView deletePost(@PathVariable Long postId, ModelAndView mav) {
 
         postService.deletePost(postId); // 게시글 삭제
@@ -122,21 +198,6 @@ public class PostApiController {
         mav.setViewName("message");
 
         return mav;
-    }
-
-    /**
-     * 수정된 정보로 게시글을 수정하고 수정된 게시글의 상세 페이지로 이동한다.
-     * @param postForm 수정된 게시글 정보를 담은 dto
-     * @return 게시글 상세페이지로 이동
-     */
-    @PutMapping(value = "/admin/api/posts")
-    public String updatePost(@ModelAttribute PostForm postForm) {
-        Long updateId = postService.updatePost(postForm.getId(), postForm);
-
-        fileService.updateFile("D:\\springboot_project\\summernote_image\\", updateId, postForm.getContent()); // 수정전에 저장된 이미지들 DB에서 삭제
-        fileService.setPostForImage(updateId, postForm.getContent()); // 이미지에 postId set
-
-        return "redirect:/posts/" + updateId;
     }
 
 }
