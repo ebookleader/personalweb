@@ -7,10 +7,13 @@ import personalwebsite.personalweb.domain.comments.Comment;
 import personalwebsite.personalweb.domain.comments.CommentRepository;
 import personalwebsite.personalweb.domain.posts.Post;
 import personalwebsite.personalweb.domain.posts.PostRepository;
+import personalwebsite.personalweb.exception.CustomException;
+import personalwebsite.personalweb.exception.ErrorCode;
 import personalwebsite.personalweb.web.dto.comments.CommentForm;
 import personalwebsite.personalweb.web.dto.comments.CommentListResponseDto;
+import java.util.HashMap;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -28,10 +31,17 @@ public class CommentService {
      */
     @Transactional
     public Long saveComments(Long postId, CommentForm commentForm) {
+
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 게시글이 없습니다. id = "+postId));
+                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+
+        if (commentForm == null) {
+            throw new CustomException(ErrorCode.EMPTY_OBJECT);
+        }
+
         Comment comment = commentForm.toEntity();
         comment.setPost(post);
+
         return commentRepository.save(comment).getId();
     }
 
@@ -40,9 +50,14 @@ public class CommentService {
      * @param postId post id
      * @return 댓글 정보를 담은 response dto의 리스트
      */
-    public List<CommentListResponseDto> findAllComments(Long postId) {
-        return commentRepository.findAllByPostIdOrderByCreatedDateDesc(postId).stream()
-                .map(CommentListResponseDto::new).collect(Collectors.toList());
+    public Map<Integer, CommentListResponseDto> findAllComments(Long postId) {
+
+        List<Comment> comments = commentRepository.findAllByPostIdOrderByCreatedDateDesc(postId);
+        Map<Integer, CommentListResponseDto> allComments = new HashMap<>();
+        for (Comment comment : comments) {
+            allComments.put(comment.getId().intValue(), new CommentListResponseDto(comment));
+        }
+        return allComments;
     }
 
     /**
@@ -51,8 +66,9 @@ public class CommentService {
      */
     @Transactional
     public void deleteComment(Long id) {
+
         Comment comment = commentRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("해당 댓글이 없습니다. id = "+id));
+                .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
         commentRepository.delete(comment);
     }
 
@@ -63,6 +79,10 @@ public class CommentService {
      * @return 중복 닉네임이 존재하면 true, 아니면 false
      */
     public boolean checkUniqueUsername(String username, Long postId) {
+
+        if (username == null || username.equals("")) {
+            throw new CustomException(ErrorCode.COMMENT_USERNAME_NULL);
+        }
         return commentRepository.existsByUsernameAndPostId(username, postId);
     }
 }

@@ -1,6 +1,7 @@
 package personalwebsite.personalweb.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -13,6 +14,8 @@ import personalwebsite.personalweb.domain.posts.Post;
 import personalwebsite.personalweb.domain.posts.PostRepository;
 import personalwebsite.personalweb.domain.uploadFile.UploadFile;
 import personalwebsite.personalweb.domain.uploadFile.UploadFileRepository;
+import personalwebsite.personalweb.exception.CustomException;
+import personalwebsite.personalweb.exception.ErrorCode;
 import personalwebsite.personalweb.web.dto.FileResponseDto;
 import java.io.File;
 import java.io.IOException;
@@ -23,10 +26,13 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class FileService {
 
     private final UploadFileRepository fileRepository;
     private final PostRepository postRepository;
+
+    private final static int imgTagStartNum = 17;
 
     /**
      * 파일 저장: 파일을 저장하고 DB에 파일 정보를 저장한 뒤 저장한 파일을 리턴한다.
@@ -37,17 +43,21 @@ public class FileService {
      */
     @Transactional
     public UploadFile storeFile(String fileRoot, MultipartFile file) throws Exception {
+
         try {
             if(file.isEmpty()) {
-                throw new Exception("Failed to store empty file " + file.getOriginalFilename());
+                log.error("failed to store empty file: {}", file.getOriginalFilename());
+                throw new CustomException(ErrorCode.EMPTY_UPLOAD_FILE);
             }
-            String saveFileName = fileSave(fileRoot, file);
+
+            String saveFileName = fileSave(fileRoot, file); // 파일 실제 저장
             String reference = null;
             String temp = "yes";
             if (fileRoot.contains("attachments")) {
                 reference = "yes";
                 temp = null;
             }
+
             UploadFile saveFile = UploadFile.builder()
                     .fileName(file.getOriginalFilename())
                     .filePath(fileRoot+saveFileName)
@@ -60,7 +70,8 @@ public class FileService {
             fileRepository.save(saveFile);
             return saveFile;
         } catch(IOException e) {
-            throw new Exception("Failed to store file " + file.getOriginalFilename(), e);
+            log.error("failed to store file (IOException): {}", file.getOriginalFilename());
+            throw new CustomException(ErrorCode.FAIL_STORE_FILE);
         }
     }
 
@@ -72,10 +83,12 @@ public class FileService {
      * @throws IOException
      */
     private String fileSave(String rootLocation, MultipartFile file) throws IOException {
+
         File uploadDir = new File(rootLocation); // 상위 주소
         if (!uploadDir.exists()) {
             uploadDir.mkdirs();
         }
+
         String saveFileName = UUID.randomUUID() + file.getOriginalFilename();
         File saveFile = new File(rootLocation, saveFileName); // 상위 주소, 파일 이름
         FileCopyUtils.copy(file.getBytes(), saveFile); // 입력파일내용을 출력파일에 복사
@@ -107,9 +120,9 @@ public class FileService {
 
         for (Element el : imgTags) { // 내용에 포함된 이미지
             String imgSrc = el.attr("src");
-            Long imgId = Long.parseLong(imgSrc.substring(17)); // 17 ~
+            Long imgId = Long.parseLong(imgSrc.substring(imgTagStartNum)); // 17 ~
             UploadFile uploadFile = fileRepository.findById(imgId)
-                    .orElseThrow(() -> new IllegalArgumentException("해당 이미지가 없습니다. id = " + imgId));
+                    .orElseThrow(() -> new CustomException(ErrorCode.IMAGE_NOT_FOUND));
 
             File dirPath = new File(newDir); // 지정 폴더
             if (!dirPath.exists()) { // 폴더가 없으면 폴더 생성
@@ -132,6 +145,7 @@ public class FileService {
      */
     @Transactional
     public void deleteFile() {
+
         List<UploadFile> files = fileRepository.findAllByTempIsNotNull();
         for (UploadFile uploadFile : files) {
             String filePath = uploadFile.getFilePath();
@@ -149,7 +163,8 @@ public class FileService {
      * @return id에 해당하는 파일
      */
     public UploadFile loadFile(Long fileId) {
-        return fileRepository.findById(fileId).get();
+
+        return fileRepository.findById(fileId).orElseThrow(() -> new CustomException(ErrorCode.UPLOAD_FILE_NOT_FOUND));
     }
 
     /**
@@ -158,13 +173,9 @@ public class FileService {
      * @return 첨부파일이면 true,아니면 false 리턴
      */
     public boolean checkPostHasAttachment(Long postId) {
+
         UploadFile file = fileRepository.findByPostIdAndReference(postId, "yes");
-        if (file == null) {
-            return false;
-        }
-        else {
-            return true;
-        }
+        return file != null;
     }
 
     /**
@@ -173,6 +184,7 @@ public class FileService {
      * @return 첨부파일의 파일정보를 담은 dto
      */
     public FileResponseDto findReferenceByPostId(Long postId) {
+
         UploadFile file = fileRepository.findByPostIdAndReference(postId, "yes");
         return new FileResponseDto(file);
     }
@@ -184,15 +196,17 @@ public class FileService {
      */
     @Transactional
     public void setPostForImage(Long postId, String content) {
-        Post post = postRepository.findById(postId).orElseThrow(() -> new IllegalArgumentException("해당 포스트가 없습니다. id = " + postId));
+
+        Post post = postRepository.findById(postId).orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+
         Document doc = Jsoup.parse(content);
         Elements imgTags = doc.select("img");
         for (Element el : imgTags) {
             String imgSrc = el.attr("src");
             // upload file PK
-            Long imgId = Long.parseLong(imgSrc.substring(17)); // 17 ~
+            Long imgId = Long.parseLong(imgSrc.substring(imgTagStartNum)); // 17 ~
             UploadFile uploadFile = fileRepository.findById(imgId)
-                    .orElseThrow(() -> new IllegalArgumentException("해당 이미지가 없습니다. id = " + imgId));
+                    .orElseThrow(() -> new CustomException(ErrorCode.IMAGE_NOT_FOUND));
             uploadFile.setPost(post);
         }
     }
@@ -203,7 +217,8 @@ public class FileService {
      * @param file 이미지 파일
      */
     public void setPostForFile(Long postId, UploadFile file) {
-        Post post = postRepository.findById(postId).orElseThrow(() -> new IllegalArgumentException("해당 포스트가 없습니다. id = " + postId));
+
+        Post post = postRepository.findById(postId).orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
         file.setPost(post);
     }
 
@@ -222,7 +237,7 @@ public class FileService {
         Elements imgTags = doc.select("img");
         for (Element el : imgTags) {
             String imgSrc = el.attr("src");
-            Long imgId = Long.parseLong(imgSrc.substring(17)); // 17 ~
+            Long imgId = Long.parseLong(imgSrc.substring(imgTagStartNum)); // 17 ~
             newContentImageId.add(imgId);
         }
 
@@ -243,7 +258,7 @@ public class FileService {
         // 새로 추가된 이미지 처리
         for (Long imgId : newContentImageId) {
             UploadFile uploadFile = fileRepository.findById(imgId)
-                    .orElseThrow(() -> new IllegalArgumentException("해당 이미지가 없습니다. id = " + imgId));
+                    .orElseThrow(() -> new CustomException(ErrorCode.IMAGE_NOT_FOUND));
 
             File dirPath = new File(saveRoot);
             if (!dirPath.exists()) {

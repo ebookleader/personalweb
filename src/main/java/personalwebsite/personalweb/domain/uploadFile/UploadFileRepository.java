@@ -1,13 +1,14 @@
 package personalwebsite.personalweb.domain.uploadFile;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 public interface UploadFileRepository extends JpaRepository<UploadFile, Long> {
-
-    UploadFile findFirstByPostId(Long postId);
 
     List<UploadFile> findAllByPostId(Long postId);
 
@@ -15,12 +16,10 @@ public interface UploadFileRepository extends JpaRepository<UploadFile, Long> {
 
     UploadFile findByPostIdAndReference(Long postId, String reference);
 
-    UploadFile findFirstByPostIdAndReferenceIsNull(Long postId);
-
     List<UploadFile> findAllByTempIsNotNull();
 
     @Transactional
-    void deleteByPostId(Long postId);
-
-    Long countByPostId(Long postId);
+    @Modifying(clearAutomatically = true)
+    @Query("delete from UploadFile f where f.post.id=:postId")
+    int deleteByPostId(@Param("postId") Long postId);
 }

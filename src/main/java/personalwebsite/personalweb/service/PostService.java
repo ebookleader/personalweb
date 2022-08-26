@@ -1,36 +1,40 @@
 package personalwebsite.personalweb.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import personalwebsite.personalweb.config.auth.dto.SessionUser;
+import personalwebsite.personalweb.domain.comments.CommentRepository;
 import personalwebsite.personalweb.domain.posts.Post;
 import personalwebsite.personalweb.domain.posts.PostRepository;
 import personalwebsite.personalweb.domain.uploadFile.UploadFile;
 import personalwebsite.personalweb.domain.uploadFile.UploadFileRepository;
 import personalwebsite.personalweb.domain.user.User;
 import personalwebsite.personalweb.domain.user.UserRepository;
+import personalwebsite.personalweb.exception.CustomException;
+import personalwebsite.personalweb.exception.ErrorCode;
 import personalwebsite.personalweb.web.dto.posts.PostListResponseDto;
 import personalwebsite.personalweb.web.dto.posts.PostResponseDto;
 import personalwebsite.personalweb.web.dto.posts.PostForm;
-
 import javax.servlet.http.HttpSession;
-import java.io.File;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Slf4j
 public class PostService {
 
     private final PostRepository postRepository;
     private final UploadFileRepository fileRepository;
     private final UserRepository userRepository;
+    private final CommentRepository commentRepository;
     private final HttpSession httpSession;
 
     /**
@@ -40,10 +44,20 @@ public class PostService {
      */
     @Transactional
     public Long savePost(PostForm postForm) {
+
+        if (postForm == null) {
+            throw new CustomException(ErrorCode.EMPTY_OBJECT);
+        }
+
         SessionUser sessionUser = (SessionUser) httpSession.getAttribute("user");
         User user = userRepository.findByEmail(sessionUser.getEmail());
+        if (user == null) {
+            throw new CustomException(ErrorCode.USER_NOT_FOUND);
+        }
+
         Post post = postForm.toEntity();
         post.setUser(user);
+
         return postRepository.save(post).getId();
     }
 
@@ -53,24 +67,28 @@ public class PostService {
      * @return 게시글 정보를 담은 response dto
      */
     public PostResponseDto findPostById(Long id) {
+
         Post post = postRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("해당 게시글이 없습니다. id = "+id));
+                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+
         return new PostResponseDto(post);
     }
 
     /**게시글 전부 불러오기 */
-    public List<PostListResponseDto> findAllPosts() {
+    public Map<Integer, PostListResponseDto> findAllPosts() {
+
         List<Post> allPosts = postRepository.findAll();
-        List<PostListResponseDto> postList = new ArrayList<>();
+        Map<Integer, PostListResponseDto> result = new HashMap<>();
 
         for (Post post : allPosts) {
+
             Document doc = Jsoup.parse(post.getContent());
             Element el = doc.select("img").first();
             UploadFile thumbnail = null;
             if (el != null) {
                 Long imgId = Long.parseLong(el.attr("src").substring(17)); // 17 ~
                 thumbnail = fileRepository.findById(imgId)
-                        .orElseThrow(() -> new IllegalArgumentException("해당 이미지가 없습니다. id = " + imgId)); // 첨부파일 x & 게시글에 포함된 이미지 중 첫번째 이미지
+                        .orElseThrow(() -> new CustomException(ErrorCode.IMAGE_NOT_FOUND)); // 첨부파일 x & 게시글에 포함된 이미지 중 첫번째 이미지
             }
 
             PostListResponseDto dto;
@@ -80,9 +98,10 @@ public class PostService {
             else {
                 dto = new PostListResponseDto(post, thumbnail.getId());
             }
-            postList.add(dto);
+            result.put(post.getId().intValue(), dto);
         }
-        return postList;
+
+        return result;
     }
 
     /**
@@ -91,13 +110,11 @@ public class PostService {
      * @return post 정보를 담은 form
      */
     public PostForm getUpdatePostForm(Long id) {
+
         Post post = postRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("해당 게시글이 없습니다. id = "+id));
-        PostForm form = new PostForm();
-        form.setId(post.getId());
-        form.setTitle(post.getTitle());
-        form.setContent(post.getContent());
-        form.setSummary(post.getSummary());
+                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+
+        PostForm form = new PostForm(post.getId(), post.getTitle(), post.getSummary(), post.getContent());
         return form;
     }
 
@@ -109,20 +126,35 @@ public class PostService {
      */
     @Transactional
     public Long updatePost(Long id, PostForm postForm) {
+
+        if (postForm == null) {
+            throw new CustomException(ErrorCode.EMPTY_OBJECT);
+        }
+
         Post post = postRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("해당 게시글이 없습니다. id = "+id));
+                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
         post.update(postForm.getTitle(), postForm.getSummary(), postForm.getContent());
+
         return id;
     }
 
     /**
      * 게시글 삭제: post를 찾아 게시글을 삭제한다.
+     * 댓글과 업로드 파일도 같이 삭제
      * @param id post id
      */
     @Transactional
     public void deletePost(Long id) {
+
         Post post = postRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("해당 게시글이 없습니다. id = " + id));
+                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+
+        int deletedCommentCnt = commentRepository.deleteByPostId(id);
+        log.info("deleted comment count: {}", deletedCommentCnt);
+
+        int deletedFileCnt = fileRepository.deleteByPostId(id);
+        log.info("deleted file count: {}", deletedFileCnt);
+
         postRepository.delete(post);
     }
 
