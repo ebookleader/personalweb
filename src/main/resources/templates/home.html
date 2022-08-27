@@ -79,12 +79,12 @@
         <div class="row justify-content-center">
             <!-- Portfolio Item -->
             <div class="col-md-6 col-lg-4 mb-5" th:each="post : ${posts}">
-                <div class="portfolio-item mx-auto" data-bs-toggle="modal" th:attr="data-bs-target='#portfolioModal'+${post.postId}">
+                <div class="portfolio-item mx-auto" data-bs-toggle="modal" th:attr="data-bs-target='#portfolioModal'+${post.key}">
                     <div class="portfolio-item-caption d-flex align-items-center justify-content-center h-100 w-100">
                         <div class="portfolio-item-caption-content text-center text-white"><i class="fas fa-plus fa-3x"></i></div>
                     </div>
-                    <img th:if="${post.thumbnailId != null}" class="img-fluid" th:src="'/summernoteImage/'+${post.thumbnailId}" alt="..." />
-                    <img th:unless="${post.thumbnailId != null}" class="img-fluid" src="/assets/img/baseImage.jpg" alt="..." />
+                    <img th:if="${post.value.thumbnailId != null}" class="img-fluid" th:src="'/summernoteImage/'+${post.value.thumbnailId}" alt="..." />
+                    <img th:unless="${post.value.thumbnailId != null}" class="img-fluid" src="/assets/img/baseImage.jpg" alt="..." />
                 </div>
             </div>
         </div>
@@ -152,7 +152,7 @@
 </div>
 
 <!-- Portfolio Modal-->
-<div th:each="post : ${posts}" class="portfolio-modal modal fade" th:id="'portfolioModal'+${post.postId}" tabindex="-1" aria-labelledby="portfolioModal1" aria-hidden="true">
+<div th:each="post : ${posts}" class="portfolio-modal modal fade" th:id="'portfolioModal'+${post.key}" tabindex="-1" aria-labelledby="portfolioModal1" aria-hidden="true">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header border-0"><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button></div>
@@ -161,7 +161,7 @@
                     <div class="row justify-content-center">
                         <div class="col-lg-10">
                             <!-- Portfolio Modal - Title-->
-                            <h2 class="mb-0" th:text="${post.title}" style="color: #2b2b2b">Log Cabin</h2>
+                            <h2 class="mb-0" th:text="${post.value.title}" style="color: #2b2b2b">Log Cabin</h2>
                             <!-- Icon Divider-->
                             <div class="divider-custom">
                                 <div class="divider-custom-line"></div>
@@ -169,11 +169,11 @@
                                 <div class="divider-custom-line"></div>
                             </div>
                             <!-- Portfolio Modal - Image-->
-                            <img th:if="${post.thumbnailId != null}" class="img-fluid rounded mb-5" th:src="'/summernoteImage/'+${post.thumbnailId}" alt="..." width="500px" />
-                            <img th:unless="${post.thumbnailId != null}" class="img-fluid rounded mb-5" src="/assets/img/baseImage.jpg" alt="..." width="500px" />
+                            <img th:if="${post.value.thumbnailId != null}" class="img-fluid rounded mb-5" th:src="'/summernoteImage/'+${post.value.thumbnailId}" alt="..." width="500px" />
+                            <img th:unless="${post.value.thumbnailId != null}" class="img-fluid rounded mb-5" src="/assets/img/baseImage.jpg" alt="..." width="500px" />
                             <!-- Portfolio Modal - Text-->
-                            <p class="mb-4 fs-5" th:text="${post.summary}">Lorem ipsum dolor sit amet, consectetur adipisicing elit.</p>
-                            <a class="btn btn-outline-dark mt-3" th:href="'/posts/'+${post.postId}" role="button">
+                            <p class="mb-4 fs-5" th:text="${post.value.summary}">Lorem ipsum dolor sit amet, consectetur adipisicing elit.</p>
+                            <a class="btn btn-outline-dark mt-3" th:href="'/posts/'+${post.key}" role="button">
                                 <i class="fas fa-sticky-note fa-fw"></i>
                                 Go To Detail Page
                             </a>

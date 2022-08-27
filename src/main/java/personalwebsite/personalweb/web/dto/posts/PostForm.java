@@ -3,11 +3,13 @@ package personalwebsite.personalweb.web.dto.posts;
 import lombok.*;
 import personalwebsite.personalweb.domain.posts.Post;
 
-@Getter @Setter
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
 public class PostForm {
 
     private Long id;
-
     private String title;
     private String summary;
     private String content;

@@ -11,7 +11,7 @@ import personalwebsite.personalweb.exception.ErrorCode;
 import personalwebsite.personalweb.service.PostService;
 import personalwebsite.personalweb.web.dto.posts.PostListResponseDto;
 import javax.servlet.http.HttpSession;
-import java.util.List;
+import java.util.Map;
 
 @Controller
 @Slf4j
@@ -30,7 +30,7 @@ public class HomeController {
             model.addAttribute("userName", user.getName());
         }
 
-        List<PostListResponseDto> posts = postService.findAllPosts();
+        Map<Integer, PostListResponseDto> posts = postService.findAllPosts();
         model.addAttribute("posts", posts);
 
         return "home";
@@ -39,6 +39,7 @@ public class HomeController {
     /** 로그인페이지로 이동한다. */
     @GetMapping(value = "/loginPage")
     public String loginPage(@RequestParam(defaultValue = "false") String error, Model model) {
+
         if (error.equals("true")) {
             model.addAttribute("errorMessage", ErrorCode.ALREADY_SIGNUP.getMessage());
         }

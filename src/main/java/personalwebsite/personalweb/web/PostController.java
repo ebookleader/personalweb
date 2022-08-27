@@ -29,7 +29,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
+import java.util.Map;
 
 @Controller
 @Slf4j
@@ -57,12 +57,12 @@ public class PostController {
         }
         // 댓글 정보
         CommentForm commentForm = new CommentForm();
-        if (user != null) {
+        if (user != null) { // 로그인 사용자면 댓글이름 미리 설정
             commentForm.setUsername(user.getName());
         }
         model.addAttribute("commentForm", commentForm); // 댓글 저장 form
 
-        List<CommentListResponseDto> comments = commentService.findAllComments(postId);
+        Map<Integer, CommentListResponseDto> comments = commentService.findAllComments(postId);
         model.addAttribute("comments", comments);
 
         return "postDetail";
@@ -177,6 +177,7 @@ public class PostController {
      */
     @PutMapping(value = "/admin/posts")
     public String updatePost(@ModelAttribute PostForm postForm) {
+
         Long updateId = postService.updatePost(postForm.getId(), postForm);
 
         fileService.updateFile("D:\\springboot_project\\summernote_image\\", updateId, postForm.getContent()); // 수정전에 저장된 이미지들 DB에서 삭제

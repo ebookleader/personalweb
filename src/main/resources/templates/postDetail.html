@@ -114,18 +114,18 @@
                             <div class="">
                                 <div class="ms-3">
                                     <div class="mb-3" th:each="comment : ${comments}">
-                                        <span class="commenter pe-2 ps-1" th:text="${comment.username}" style="font-weight: bold;">
+                                        <span class="commenter pe-2 ps-1" th:text="${comment.value.username}" style="font-weight: bold;">
                                             Commenter Name
                                         </span>
-                                        <span class="text-primary text-opacity-75 pe-2" th:text="${comment.modifiedDate}">modifiedDate</span>
+                                        <span class="text-primary text-opacity-75 pe-2" th:text="${comment.value.modifiedDate}">modifiedDate</span>
 
-                                        <form sec:authorize-expr="isAuthenticated()" method="post" th:action="'/admin/postComment/'+${comment.commentId}" class="float-end" onsubmit="return confirmCommentDelete();">
+                                        <form sec:authorize-expr="isAuthenticated()" method="post" th:action="'/admin/postComment/'+${comment.key}" class="float-end" onsubmit="return confirmCommentDelete();">
                                             <input type="hidden" name="_method" value="DELETE">
                                             <input type="hidden" name="postId" th:value="${post.id}">
                                             <button class="btn btn-dark opacity-50 btn-sm" type="submit">delete</button>
                                         </form>
 
-                                        <p class="border border-dark rounded p-2 mt-3" th:text="${comment.text}"></p>
+                                        <p class="border border-dark rounded p-2 mt-3" th:text="${comment.value.text}"></p>
                                     </div>
                                 </div>
                             </div>
