@@ -1,6 +1,7 @@
 package personalwebsite.personalweb.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import personalwebsite.personalweb.domain.comments.Comment;
@@ -14,9 +15,11 @@ import personalwebsite.personalweb.web.dto.comments.CommentListResponseDto;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 @Transactional(readOnly = true)
 public class CommentService {
 
@@ -78,11 +81,15 @@ public class CommentService {
      * @param postId post id
      * @return 중복 닉네임이 존재하면 true, 아니면 false
      */
-    public boolean checkUniqueUsername(String username, Long postId) {
+    public void checkUniqueUsername(String username, Long postId) {
 
         if (username == null || username.equals("")) {
+            log.error("username is null");
             throw new CustomException(ErrorCode.COMMENT_USERNAME_NULL);
         }
-        return commentRepository.existsByUsernameAndPostId(username, postId);
+        if (commentRepository.existsByUsernameAndPostId(username, postId)) {
+            log.error("username duplicated");
+            throw new CustomException(ErrorCode.DUPLICATE_COMMENT_USERNAME);
+        }
     }
 }

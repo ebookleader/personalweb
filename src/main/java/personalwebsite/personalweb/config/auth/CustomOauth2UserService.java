@@ -37,32 +37,39 @@ public class CustomOauth2UserService implements OAuth2UserService<OAuth2UserRequ
         OAuth2UserService<OAuth2UserRequest, OAuth2User> delegate = new DefaultOAuth2UserService();
         OAuth2User oAuth2User = delegate.loadUser(userRequest);
 
-        String email = oAuth2User.getAttributes().get("email").toString();
-        User user = userRepository.findByEmail(email);
+//        String email = oAuth2User.getAttributes().get("email").toString();
+//        User user = userRepository.findByEmail(email);
 
-        if (user == null) { // 해당 유저가 없을경우 이미 가입된 다른 아이디가 있는지 체크
-
-            List<User> allUser = userRepository.findAll();
-            if (!allUser.isEmpty()) {   // 1명 가입되어있지만 이메일이 다를경우
-                OAuth2Error oAuth2Error = new OAuth2Error(ErrorCode.ALREADY_SIGNUP.getMessage());
-                throw new OAuth2AuthenticationException(oAuth2Error, oAuth2Error.toString());
-            }
-        }
+//        if (user == null) { // 해당 유저가 없을경우 이미 가입된 다른 아이디가 있는지 체크
+//
+//            List<User> allUser = userRepository.findAll();
+//            if (!allUser.isEmpty()) {   // 1명 가입되어있지만 이메일이 다를경우
+//                OAuth2Error oAuth2Error = new OAuth2Error(ErrorCode.ALREADY_SIGNUP.getMessage());
+//                throw new OAuth2AuthenticationException(oAuth2Error, oAuth2Error.toString());
+//            }
+//        }
 
         String registrationId = userRequest.getClientRegistration().getRegistrationId();    //구글, 네이버 구분
         String userNameAttributeName = userRequest.getClientRegistration().getProviderDetails().getUserInfoEndpoint().getUserNameAttributeName();
 
         OAuthAttributes attributes = OAuthAttributes.of(registrationId, userNameAttributeName, oAuth2User.getAttributes());
 
-        user.update(attributes.getName(), attributes.getPicture()); // save or update user
-        userRepository.save(user);
+//        user.update(attributes.getName(), attributes.getPicture()); // save or update user
+//        userRepository.save(user);
 
+        User user = saveOrUpdateUser(attributes);
         httpSession.setAttribute("user", new SessionUser(user));
 
         return new DefaultOAuth2User(
                 Collections.singleton(new SimpleGrantedAuthority(user.getRoleKye())),
                 attributes.getAttributes(),
                 attributes.getNameAttributeKey());
+    }
+
+    private User saveOrUpdateUser(OAuthAttributes attributes) {
+        User user = userRepository.findByEmail(attributes.getEmail()).map(entity -> entity.update(attributes.getName(), attributes.getPicture()))
+                .orElse(attributes.toEntity());
+        return userRepository.save(user);
     }
 
 }

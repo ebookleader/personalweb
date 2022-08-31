@@ -27,6 +27,13 @@
 <div class="container d-flex justify-content-center p-5">
     <a href="/oauth2/authorization/google" role="button" class="btn btn-lg btn-success">Google Login</a>
 </div>
+<div class="container d-flex justify-content-center">
+  <form th:object="${loginForm}" th:action="@{/basicUserLogin}" method="post">
+    <input type="text" th:field="*{name}" placeholder="이름">
+    <input type="text" th:field="*{email}" placeholder="이메일">
+    <button type="submit">submit</button>
+  </form>
+</div>
 
 <!-- Bootstrap core JS-->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>

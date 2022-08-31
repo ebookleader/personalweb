@@ -50,10 +50,7 @@ public class PostService {
         }
 
         SessionUser sessionUser = (SessionUser) httpSession.getAttribute("user");
-        User user = userRepository.findByEmail(sessionUser.getEmail());
-        if (user == null) {
-            throw new CustomException(ErrorCode.USER_NOT_FOUND);
-        }
+        User user = userRepository.findByEmail(sessionUser.getEmail()).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         Post post = postForm.toEntity();
         post.setUser(user);

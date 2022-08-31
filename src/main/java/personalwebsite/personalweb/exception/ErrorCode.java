@@ -13,7 +13,6 @@ public enum ErrorCode {
     EMPTY_UPLOAD_FILE(HttpStatus.BAD_REQUEST, "업로드 파일이 비어있습니다."),
     COMMENT_USERNAME_NULL(HttpStatus.BAD_REQUEST, "댓글 작성자 이름이 비어있습니다."),
 
-
     /* 404 NOT FOUND */
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."),
     POST_NOT_FOUND(HttpStatus.NOT_FOUND, "포스트를 찾을 수 없습니다."),
@@ -23,6 +22,7 @@ public enum ErrorCode {
 
     /* 409 CONFLICT */
     ALREADY_SIGNUP(HttpStatus.CONFLICT, "이미 다른 아이디로 가입되어 있습니다."),
+    DUPLICATE_COMMENT_USERNAME(HttpStatus.CONFLICT, "중복된 댓글 닉네임입니다."),
 
     /* 500 INTERNAL_SERVER_ERROR */
     FAIL_STORE_FILE(HttpStatus.INTERNAL_SERVER_ERROR, "업로드 파일 저장에 실패했습니다.");

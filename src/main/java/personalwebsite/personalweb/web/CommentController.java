@@ -9,9 +9,13 @@ import personalwebsite.personalweb.config.auth.dto.SessionUser;
 import personalwebsite.personalweb.service.CommentService;
 import personalwebsite.personalweb.web.dto.Message;
 import personalwebsite.personalweb.web.dto.comments.CommentForm;
+import personalwebsite.personalweb.web.dto.comments.CommentListResponseDto;
 import javax.servlet.http.HttpSession;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-@Controller
+@RestController
 @Slf4j
 @RequiredArgsConstructor
 public class CommentController {
@@ -20,28 +24,15 @@ public class CommentController {
     private final HttpSession httpSession;
 
     /** 댓글을 저장하고 결과에 따라 결과 메시지와 이동할 주소를 넣은 ModelAndView 객체를 리턴한다. */
-    @PostMapping("/postComment")
-    public ModelAndView saveComment(@RequestParam("postId") Long postId, @ModelAttribute CommentForm commentForm, ModelAndView mav) {
+    @PostMapping("/postComment/{postId}")
+    public Long saveComment(@PathVariable Long postId, @RequestBody CommentForm commentForm) {
 
         SessionUser user = (SessionUser) httpSession.getAttribute("user");
-        boolean isDuplicated = false; // 관리자는 여러개의 댓글 입력 가능
-
-        if (user == null) { // 관리자가 아닌 경우 중복 닉네임 체크
-            isDuplicated = commentService.checkUniqueUsername(commentForm.getUsername(), postId);
+        if (user == null) {
+            commentService.checkUniqueUsername(commentForm.getUsername(), postId);
         }
 
-        String hre = "/posts/"+postId;
-
-        if (isDuplicated) { // 중복 닉네임이 있을 경우
-            mav.addObject("data", new Message("comment save failed (duplicated username)", hre));
-        }
-        else {  // 중복된 닉네임이 없는 경우, 댓글 저장
-            Long commentId = commentService.saveComments(postId, commentForm);
-            mav.addObject("data", new Message("comment save success", hre));
-        }
-        mav.setViewName("message");
-
-        return mav;
+        return commentService.saveComments(postId, commentForm);
     }
 
     /** 댓글을 삭제하고 삭제 성공 메시지와 이동할 주소를 넣은 ModelAndView 객체를 리턴한다. */

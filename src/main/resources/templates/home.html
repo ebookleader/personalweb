@@ -14,6 +14,8 @@
 
     <!-- Core theme CSS (includes Bootstrap)-->
     <link href="/css/styles.css" rel="stylesheet" />
+    <script src="https://code.jquery.com/jquery-3.4.1.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
 </head>
 <body id="page-top">
 <!-- Navigation-->
@@ -21,12 +23,14 @@
     <div class="container">
         <a class="navbar-brand" href="#page-top">
             Dev Portfolio
-            <span sec:authorize-expr="isAuthenticated()">
-                <span class="text-white-50">[</span>
-                <span class="text-white-50 text-lowercase" th:text="${userName}">ADMIN</span>
-                <span class="text-white-50">]</span>
+            <span sec:authorize-expr="isAuthenticated()" th:if="${sessionUser.getRole().toString()} == 'USER'">
+                <span class="text-white-50">[ADMIN(</span>
+                <span class="text-white-50 text-lowercase" th:text="${sessionUser.getName()}">ADMIN</span>
+                <span class="text-white-50">)]</span>
             </span>
         </a>
+        <input type="hidden" th:value="${sessionUser}" id="sessionUser">
+        <div id="socketMessage"></div>
         <button class="navbar-toggler text-uppercase font-weight-bold bg-primary text-white rounded" type="button" data-bs-toggle="collapse" data-bs-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
             Menu
             <i class="fas fa-bars"></i>
@@ -36,7 +40,7 @@
                 <li class="nav-item mx-0 mx-lg-1"><a class="nav-link py-3 px-0 px-lg-3 rounded" href="#home">Home</a></li>
                 <li class="nav-item mx-0 mx-lg-1"><a class="nav-link py-3 px-0 px-lg-3 rounded" href="#portfolio">Portfolio</a></li>
                 <li class="nav-item mx-0 mx-lg-1"><a class="nav-link py-3 px-0 px-lg-3 rounded" href="#about">About</a></li>
-                <li class="nav-item mx-0 mx-lg-1" sec:authorize-expr="isAuthenticated()">
+                <li class="nav-item mx-0 mx-lg-1" sec:authorize-expr="isAuthenticated()" th:if="${sessionUser.getRole().toString()} == 'USER'">
                     <a class="nav-link py-3 px-0 px-lg-3 rounded" href="/admin/posts">Write post</a>
                 </li>
                 <li class="nav-item mx-0 mx-lg-1" sec:authorize-expr="isAuthenticated()">
@@ -61,7 +65,7 @@
             <div class="divider-custom-line"></div>
         </div>
         <!-- Masthead Subheading-->
-<!--        <p class="masthead-subheading font-weight-light mb-0">Backend Web Developer</p>-->
+        <!--        <p class="masthead-subheading font-weight-light mb-0">Backend Web Developer</p>-->
     </div>
 </header>
 <!-- Portfolio Section-->
@@ -184,7 +188,40 @@
         </div>
     </div>
 </div>
+<script>
+    var socket = null;
+    var sessionUser = $('#sessionUser').val();
+    console.log(sessionUser);
+    $(document).ready(function() {
+        if (sessionUser) {
+            connectSocket();
+        }
+    })
 
+    function connectSocket() {
+        console.log("socket connect start");
+        var websocket = new SockJS("/ws/comment");
+        socket = websocket;
+
+        websocket.onopen = function() { // socket 연결됐을때
+            console.log("socket open");
+        };
+
+        websocket.onmessage = function(event) { // 서버에서 메세지 받았을때
+            console.log("onmessage: "+event.data);
+            let $socketMessage = $('div#socketMessage');
+            $socketMessage.html(event.data);
+            $socketMessage.css('display', 'block');
+            setTimeout(function () {
+                $socketMessage.css('display', 'none');
+            }, 7000);
+        };
+
+        websocket.onclose = function() { // socket 닫힐때
+            console.log("socket close");
+        }
+    }
+</script>
 <!-- Bootstrap core JS-->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <!-- Core theme JS-->

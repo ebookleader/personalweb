@@ -48,7 +48,7 @@ public class PostController {
 
         SessionUser user = (SessionUser) httpSession.getAttribute("user");
         if (user != null) {
-            model.addAttribute("userName", user.getName());
+            model.addAttribute("sessionUser", user);
         }
         // 게시글 정보
         model.addAttribute("post", postService.findPostById(postId));
@@ -74,7 +74,7 @@ public class PostController {
 
         SessionUser user = (SessionUser) httpSession.getAttribute("user");
         if (user != null) {
-            model.addAttribute("userName", user.getName());
+            model.addAttribute("sessionUser", user);
         }
 
         model.addAttribute("postForm", new PostForm());
@@ -163,7 +163,7 @@ public class PostController {
 
         SessionUser user = (SessionUser) httpSession.getAttribute("user");
         if (user != null) {
-            model.addAttribute("userName", user.getName());
+            model.addAttribute("sessionUser", user);
         }
         // 수정 폼
         model.addAttribute("postForm", postService.getUpdatePostForm(postId));

@@ -8,6 +8,7 @@ import java.time.format.DateTimeFormatter;
 public class PostResponseDto {
 
     private Long id;
+    private Long writerId;
     private String title;
     private String summary;
     private String content;
@@ -15,6 +16,7 @@ public class PostResponseDto {
 
     public PostResponseDto(Post post) {
         this.id = post.getId();
+        this.writerId = post.getUser().getId();
         this.title = post.getTitle();
         this.summary = post.getSummary();
         this.content = post.getContent();

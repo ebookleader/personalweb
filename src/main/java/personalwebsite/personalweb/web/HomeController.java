@@ -10,6 +10,8 @@ import personalwebsite.personalweb.config.auth.dto.SessionUser;
 import personalwebsite.personalweb.exception.ErrorCode;
 import personalwebsite.personalweb.service.PostService;
 import personalwebsite.personalweb.web.dto.posts.PostListResponseDto;
+import personalwebsite.personalweb.web.dto.user.LoginForm;
+
 import javax.servlet.http.HttpSession;
 import java.util.Map;
 
@@ -27,7 +29,7 @@ public class HomeController {
 
         SessionUser user = (SessionUser) httpSession.getAttribute("user");
         if (user != null) {
-            model.addAttribute("userName", user.getName());
+            model.addAttribute("sessionUser", user);
         }
 
         Map<Integer, PostListResponseDto> posts = postService.findAllPosts();
@@ -43,6 +45,7 @@ public class HomeController {
         if (error.equals("true")) {
             model.addAttribute("errorMessage", ErrorCode.ALREADY_SIGNUP.getMessage());
         }
+        model.addAttribute("loginForm", new LoginForm());
         return "beforeLogin";
     }
 
