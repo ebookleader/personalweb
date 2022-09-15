@@ -27,7 +27,6 @@
       </span>
     </a>
     <input type="hidden" th:value="${sessionUser}" id="sessionUser">
-    <div id="socketMessage"></div>
     <button class="navbar-toggler text-uppercase font-weight-bold bg-primary text-white rounded" type="button" data-bs-toggle="collapse" data-bs-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
       Menu
       <i class="fas fa-bars"></i>
@@ -43,6 +42,39 @@
         <li class="nav-item mx-0 mx-lg-1" sec:authorize-expr="isAuthenticated()">
           <a class="nav-link py-3 px-0 px-lg-3 rounded" href="/logout">LOGOUT</a>
         </li>
+      </ul>
+    </div>
+    <div class="dropdown" sec:authorize-expr="isAuthenticated()">
+      <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+        <svg xmlns="http://www.w3.org/2000/svg" width="23" height="23" fill="currentColor" class="bi bi-bell" viewBox="0 0 16 16">
+          <path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2zM8 1.918l-.797.161A4.002 4.002 0 0 0 4 6c0 .628-.134 2.197-.459 3.742-.16.767-.376 1.566-.663 2.258h10.244c-.287-.692-.502-1.49-.663-2.258C12.134 8.197 12 6.628 12 6a4.002 4.002 0 0 0-3.203-3.92L8 1.917zM14.22 12c.223.447.481.801.78 1H1c.299-.199.557-.553.78-1C2.68 10.2 3 6.88 3 6c0-2.42 1.72-4.44 4.005-4.901a1 1 0 1 1 1.99 0A5.002 5.002 0 0 1 13 6c0 .88.32 4.2 1.22 6z"/>
+        </svg>
+        <span id="alarmCount" th:text="${alarms.size()}"></span>
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end me-3 mt-3 py-0 overflow-auto" aria-labelledby="dropdownMenuButton1" data-bs-popper="none" style="height: 400px;">
+        <li><h6 class="dropdown-header bg-secondary text-white fw-500 py-3">Alerts</h6></li>
+        <div th:each="alarm : ${alarms}">
+          <li><hr class="dropdown-divider my-0"></li>
+          <li>
+            <a class="dropdown-item unread mdc-ripple-upgraded" th:href="'/alarm/'+${alarm.key}">
+              <div class="dropdown-item-content me-2">
+                <div class="dropdown-item-content-text" th:text="${alarm.value.message}"></div>
+                <div class="dropdown-item-content-subtext" th:text="${alarm.value.createdDate}"></div>
+              </div>
+            </a>
+          </li>
+        </div>
+        <div id="socketMessage" style="display: none">
+          <li><hr class="dropdown-divider my-0"></li>
+          <li>
+            <a class="dropdown-item unread mdc-ripple-upgraded" id="alarmHref" href="/">
+              <div class="dropdown-item-content me-2">
+                <div class="dropdown-item-content-text" id="alarmMessage"></div>
+                <div class="dropdown-item-content-subtext" id="alarmDate"></div>
+              </div>
+            </a>
+          </li>
+        </div>
       </ul>
     </div>
   </div>
@@ -72,92 +104,60 @@
         <a role="button" href="/" class="btn btn-dark opacity-75">Cancel</a>
       </div>
     </form>
-    <script>
-      $(document).ready(function() {
-        $('#summernote').summernote({
-          height : 700,
-          minHeight : null,
-          maxHeight : null,
-          toolbar: [
-            // [groupName, [list of button]]
-            ['fontname', ['fontname']],
-            ['fontsize', ['fontsize']],
-            ['style', ['bold', 'italic', 'underline','strikethrough', 'clear']],
-            ['color', ['forecolor','color']],
-            ['table', ['table']],
-            ['para', ['ul', 'ol', 'paragraph']],
-            ['height', ['height']],
-            ['insert',['picture','link','video']],
-            ['view', ['fullscreen', 'help']]
-          ],
-          fontNames: ['Arial', 'Arial Black', 'Comic Sans MS', 'Courier New','맑은 고딕','궁서','굴림체','굴림','돋음체','바탕체'],
-          fontSizes: ['8','9','10','11','12','14','16','18','20','22','24','28','30','36','50','72'],
-          focus : true,
-          callbacks : {
-            onImageUpload : function(files, editor, welEditable) {
-              for (var i = 0; i < files.length; i++) {
-                sendFile(files[i], this);
-              }
-            }
-          }
-        });
-      });
-
-      function sendFile(file, el) {
-        var form_data = new FormData();
-        form_data.append('file', file);
-        $.ajax({
-          data : form_data,
-          type : "POST",
-          url : '/uploadSummernoteImage',
-          cache : false,
-          contentType : false,
-          enctype : 'multipart/form-data',
-          processData : false,
-          success : function(url) {
-            $(el).summernote('insertImage', url, function($image) {
-              $image.css('width', "25%");
-            });
-          }
-        });
-      }
-    </script>
-    <script>
-      var socket = null;
-      var sessionUser = $('#sessionUser').val();
-      console.log(sessionUser);
-      $(document).ready(function() {
-        if (sessionUser) {
-          connectSocket();
-        }
-      })
-
-      function connectSocket() {
-        console.log("socket connect start");
-        var websocket = new SockJS("/ws/comment");
-        socket = websocket;
-
-        websocket.onopen = function() { // socket 연결됐을때
-          console.log("socket open");
-        };
-
-        websocket.onmessage = function(event) { // 서버에서 메세지 받았을때
-          console.log("onmessage: "+event.data);
-          let $socketMessage = $('div#socketMessage');
-          $socketMessage.html(event.data);
-          $socketMessage.css('display', 'block');
-          setTimeout(function () {
-            $socketMessage.css('display', 'none');
-          }, 7000);
-        };
-
-        websocket.onclose = function() { // socket 닫힐때
-          console.log("socket close");
-        }
-      }
-    </script>
-
   </div>
 </section>
+
+<script>
+  $(document).ready(function() {
+    $('#summernote').summernote({
+      height : 700,
+      minHeight : null,
+      maxHeight : null,
+      toolbar: [
+        // [groupName, [list of button]]
+        ['fontname', ['fontname']],
+        ['fontsize', ['fontsize']],
+        ['style', ['bold', 'italic', 'underline','strikethrough', 'clear']],
+        ['color', ['forecolor','color']],
+        ['table', ['table']],
+        ['para', ['ul', 'ol', 'paragraph']],
+        ['height', ['height']],
+        ['insert',['picture','link','video']],
+        ['view', ['fullscreen', 'help']]
+      ],
+      fontNames: ['Arial', 'Arial Black', 'Comic Sans MS', 'Courier New','맑은 고딕','궁서','굴림체','굴림','돋음체','바탕체'],
+      fontSizes: ['8','9','10','11','12','14','16','18','20','22','24','28','30','36','50','72'],
+      focus : true,
+      callbacks : {
+        onImageUpload : function(files, editor, welEditable) {
+          for (var i = 0; i < files.length; i++) {
+            sendFile(files[i], this);
+          }
+        }
+      }
+    });
+  });
+
+  function sendFile(file, el) {
+    var form_data = new FormData();
+    form_data.append('file', file);
+    $.ajax({
+      data : form_data,
+      type : "POST",
+      url : '/uploadSummernoteImage',
+      cache : false,
+      contentType : false,
+      enctype : 'multipart/form-data',
+      processData : false,
+      success : function(url) {
+        $(el).summernote('insertImage', url, function($image) {
+          $image.css('width', "25%");
+        });
+      }
+    });
+  }
+</script>
+<script src="/js/customSocket.js"></script>
+
 </body>
 </html>

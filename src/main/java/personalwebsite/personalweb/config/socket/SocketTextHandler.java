@@ -34,20 +34,20 @@ public class SocketTextHandler extends TextWebSocketHandler {
         String msg = message.getPayload(); // 자바스크립트에서 넘어온 메세지
         if (!checkStringNullEmpty(msg)) {
             String[] strings = msg.split(",");
-            // type, commentUser, writer, postId, postTitle
+            // type, alarmId, alarmMessage, alarmDate
             if (strings.length == 5) {
                 String type = strings[0];
-                String commentUser = strings[1];
-                String writer = strings[2];
-                String postId = strings[3];
-                String postTitle = strings[4];
+                String writer = strings[1];
+                String alarmId = strings[2];
+                String alarmMessage = strings[3];
+                String alarmDate = strings[4];
+                log.info(">>>>>> type:{}, writer:{}, id:{}, message:{}, date:{}", type, writer, alarmId, alarmMessage, alarmDate);
 
                 WebSocketSession postWriterSession = users.get(writer);
 
                 if (type.equals("comment") && postWriterSession!=null) {
-                    log.info(">>>>>> comment session");
                     TextMessage textMessage = new TextMessage(
-                            commentUser+"님이"+"<a href='/posts/"+postId+"'>"+postTitle+"에 댓글을 작성하였습니다.</a>"
+                            writer+","+alarmId+","+alarmMessage+","+alarmDate
                     );
                     postWriterSession.sendMessage(textMessage);
                 }

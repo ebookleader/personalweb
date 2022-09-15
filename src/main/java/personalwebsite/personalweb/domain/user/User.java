@@ -3,6 +3,7 @@ package personalwebsite.personalweb.domain.user;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import personalwebsite.personalweb.domain.alarm.Alarm;
 import personalwebsite.personalweb.domain.posts.Post;
 
 import javax.persistence.*;
@@ -31,6 +32,9 @@ public class User {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<Post> posts = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    private List<Alarm> alarms = new ArrayList<>();
 
     @Builder
     public User(String name, String email, String picture, Role role) {

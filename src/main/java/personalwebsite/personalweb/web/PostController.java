@@ -16,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
 import personalwebsite.personalweb.config.auth.dto.SessionUser;
 import personalwebsite.personalweb.domain.uploadFile.UploadFile;
+import personalwebsite.personalweb.domain.user.Role;
 import personalwebsite.personalweb.service.CommentService;
 import personalwebsite.personalweb.service.FileService;
 import personalwebsite.personalweb.service.PostService;
@@ -49,6 +50,10 @@ public class PostController {
         SessionUser user = (SessionUser) httpSession.getAttribute("user");
         if (user != null) {
             model.addAttribute("sessionUser", user);
+            if (user.getRole() == Role.USER) {
+                model.addAttribute("alarms", commentService.findAllUncheckedAlarms());
+            }
+
         }
         // 게시글 정보
         model.addAttribute("post", postService.findPostById(postId));
@@ -75,6 +80,9 @@ public class PostController {
         SessionUser user = (SessionUser) httpSession.getAttribute("user");
         if (user != null) {
             model.addAttribute("sessionUser", user);
+            if (user.getRole() == Role.USER) {
+                model.addAttribute("alarms", commentService.findAllUncheckedAlarms());
+            }
         }
 
         model.addAttribute("postForm", new PostForm());
@@ -164,6 +172,9 @@ public class PostController {
         SessionUser user = (SessionUser) httpSession.getAttribute("user");
         if (user != null) {
             model.addAttribute("sessionUser", user);
+            if (user.getRole() == Role.USER) {
+                model.addAttribute("alarms", commentService.findAllUncheckedAlarms());
+            }
         }
         // 수정 폼
         model.addAttribute("postForm", postService.getUpdatePostForm(postId));

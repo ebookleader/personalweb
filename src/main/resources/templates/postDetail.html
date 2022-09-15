@@ -21,7 +21,7 @@
 <body>
 <nav class="navbar navbar-expand-lg text-uppercase fixed-top" id="mainNav" style="background-color: #968C83">
     <div class="container">
-        <a class="navbar-brand" href="#page-top">
+        <a class="navbar-brand" href="/">
             Dev Portfolio
             <span sec:authorize-expr="isAuthenticated()" th:if="${sessionUser.getRole().toString()} == 'USER'">
                 <span class="text-white-50">[ADMIN(</span>
@@ -30,7 +30,6 @@
             </span>
         </a>
         <input type="hidden" th:value="${sessionUser}" id="sessionUser">
-        <div id="socketMessage"></div>
         <button class="navbar-toggler text-uppercase font-weight-bold bg-primary text-white rounded" type="button" data-bs-toggle="collapse" data-bs-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
             Menu
             <i class="fas fa-bars"></i>
@@ -45,6 +44,39 @@
                 <li class="nav-item mx-0 mx-lg-1" sec:authorize-expr="isAuthenticated()">
                     <a class="nav-link py-3 px-0 px-lg-3 rounded" href="/logout">LOGOUT</a>
                 </li>
+            </ul>
+        </div>
+        <div class="dropdown" sec:authorize-expr="isAuthenticated()">
+            <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+                <svg xmlns="http://www.w3.org/2000/svg" width="23" height="23" fill="currentColor" class="bi bi-bell" viewBox="0 0 16 16">
+                    <path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2zM8 1.918l-.797.161A4.002 4.002 0 0 0 4 6c0 .628-.134 2.197-.459 3.742-.16.767-.376 1.566-.663 2.258h10.244c-.287-.692-.502-1.49-.663-2.258C12.134 8.197 12 6.628 12 6a4.002 4.002 0 0 0-3.203-3.92L8 1.917zM14.22 12c.223.447.481.801.78 1H1c.299-.199.557-.553.78-1C2.68 10.2 3 6.88 3 6c0-2.42 1.72-4.44 4.005-4.901a1 1 0 1 1 1.99 0A5.002 5.002 0 0 1 13 6c0 .88.32 4.2 1.22 6z"/>
+                </svg>
+                <span id="alarmCount" th:text="${alarms.size()}"></span>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end me-3 mt-3 py-0 overflow-auto" aria-labelledby="dropdownMenuButton1" data-bs-popper="none" style="height: 400px;">
+                <li><h6 class="dropdown-header bg-secondary text-white fw-500 py-3">Alerts</h6></li>
+                <div th:each="alarm : ${alarms}">
+                    <li><hr class="dropdown-divider my-0"></li>
+                    <li>
+                        <a class="dropdown-item unread mdc-ripple-upgraded" th:href="'/alarm/'+${alarm.key}">
+                            <div class="dropdown-item-content me-2">
+                                <div class="dropdown-item-content-text" th:text="${alarm.value.message}"></div>
+                                <div class="dropdown-item-content-subtext" th:text="${alarm.value.createdDate}"></div>
+                            </div>
+                        </a>
+                    </li>
+                </div>
+                <div id="socketMessage" style="display: none">
+                    <li><hr class="dropdown-divider my-0"></li>
+                    <li>
+                        <a class="dropdown-item unread mdc-ripple-upgraded" id="alarmHref" href="/">
+                            <div class="dropdown-item-content me-2">
+                                <div class="dropdown-item-content-text" id="alarmMessage"></div>
+                                <div class="dropdown-item-content-subtext" id="alarmDate"></div>
+                            </div>
+                        </a>
+                    </li>
+                </div>
             </ul>
         </div>
     </div>
@@ -133,40 +165,6 @@
                             </div>
 
                             <script>
-                                var socket = null;
-                                var sessionUser = $('#sessionUser').val();
-                                console.log(sessionUser);
-                                $(document).ready(function() {
-                                    if (sessionUser) {
-                                        connectSocket();
-                                    }
-                                })
-
-                                function connectSocket() {
-                                    console.log("socket connect start");
-                                    var websocket = new SockJS("/ws/comment");
-                                    socket = websocket;
-
-                                    websocket.onopen = function() { // socket 연결됐을때
-                                        console.log("socket open");
-                                    };
-
-                                    websocket.onmessage = function(event) { // 서버에서 메세지 받았을때
-                                        console.log("onmessage: "+event.data);
-                                        let $socketMessage = $('div#socketMessage');
-                                        $socketMessage.html(event.data);
-                                        $socketMessage.css('display', 'block');
-                                        setTimeout(function () {
-                                            $socketMessage.css('display', 'none');
-                                        }, 7000);
-                                    };
-
-                                    websocket.onclose = function() { // socket 닫힐때
-                                        console.log("socket close");
-                                    }
-                                }
-                            </script>
-                            <script>
                                 function saveComment() {
                                     if (checkDuplicatedUsername() && checkCommentFormData()) {
                                         var cmt = {
@@ -175,7 +173,6 @@
                                         };
                                         var postId = $('#postId').val();
                                         var writer = $('#writer').val();
-                                        var postTitle = $('#postTitle').innerText;
 
                                         $.ajax({
                                             type: 'POST',
@@ -184,41 +181,14 @@
                                             contentType: 'application/json; charset=utf-8',
                                             data: JSON.stringify(cmt),
                                             success: function(data) {
-                                                // 댓글 목록 다시 가져오기
-                                                if (socket) { // type, commentUser, writer, postId, postTitle
-                                                    let socketMessage = "comment,"+cmt.username+","+writer+","+postId+","+postTitle;
+                                                if (socket) {
+                                                    let socketMessage = "comment,"+writer+","+data.id+","+data.message+","+data.createdDate;
                                                     socket.send(socketMessage);
                                                 }
                                                 window.location.href = '/posts/'+postId;
                                             }
                                         });
                                     }
-                                };
-
-                                function getCommentList() {
-
-                                    var postId = $('#postId').val();
-                                    console.log(postId);
-
-                                    $.ajax({
-                                        type: 'GET',
-                                        url: '/postComment/'+postId,
-                                        success: function(data) {
-                                            if (data.code == 0) {
-                                                for (var i=0 ; i<data.length ; i++) {
-                                                    var span1 = "<span className=\"commenter pe-2 ps-1\" style=\"font-weight: bold;\">"+data.data[i].username+"</span>";
-                                                    var span2 = "<span className=\"text-primary text-opacity-75 pe-2\">"+data.data[i].modifiedData+"</span>";
-                                                    var ptag = "<p className=\"border border-dark rounded p-2 mt-3\">"+data.data[i].text+"</p>";
-                                                    var newComment = span1+span2+ptag;
-                                                    $('#commentDiv').append(newComment);
-                                                }
-                                            }
-                                        },
-                                        error: function() {
-                                            alert('작성한 댓글 불러오기 오류');
-                                        }
-
-                                    });
                                 };
 
                                 function saveComment_auth() {
@@ -240,7 +210,6 @@
                                                 alert('댓글이 작성되었습니다.');
                                                 if (socket) { // type, commentUser, postId, postTitle
                                                     let socketMessage = "comment,"+cmt.username+","+postId+","+postTitle;
-                                                    console.log(socketMessage);
                                                     socket.send(socketMessage);
                                                 }
                                                 // window.location.href = '/posts/'+postId;
@@ -385,5 +354,8 @@
 <div class="copyright py-4 text-center text-white" style="background-color: #968C83">
     <div class="container"><small>Copyright &copy; DEV PORTFOLIO 2022</small></div>
 </div>
+
+<script src="/js/customSocket.js"></script>
+
 </body>
 </html>

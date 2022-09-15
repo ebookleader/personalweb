@@ -16,7 +16,7 @@ public class CommentListResponseDto {
         this.commentId = comment.getId();
         this.username = comment.getUsername();
         this.text = comment.getText();
-        this.modifiedDate = comment.getModifiedDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));;
+        this.modifiedDate = comment.getModifiedDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
     }
 
 }

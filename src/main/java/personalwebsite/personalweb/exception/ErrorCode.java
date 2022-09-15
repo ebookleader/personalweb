@@ -19,6 +19,7 @@ public enum ErrorCode {
     IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "이미지를 찾을 수 없습니다."),
     UPLOAD_FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "파일을 찾을 수 없습니다."),
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "댓글을 찾을 수 없습니다."),
+    ALARM_NOT_FOUND(HttpStatus.NOT_FOUND, "알림을 찾을 수 없습니다."),
 
     /* 409 CONFLICT */
     ALREADY_SIGNUP(HttpStatus.CONFLICT, "이미 다른 아이디로 가입되어 있습니다."),

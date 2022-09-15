@@ -4,18 +4,24 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import personalwebsite.personalweb.config.auth.dto.SessionUser;
+import personalwebsite.personalweb.domain.alarm.Alarm;
+import personalwebsite.personalweb.domain.alarm.AlarmRepository;
 import personalwebsite.personalweb.domain.comments.Comment;
 import personalwebsite.personalweb.domain.comments.CommentRepository;
 import personalwebsite.personalweb.domain.posts.Post;
 import personalwebsite.personalweb.domain.posts.PostRepository;
+import personalwebsite.personalweb.domain.user.User;
+import personalwebsite.personalweb.domain.user.UserRepository;
 import personalwebsite.personalweb.exception.CustomException;
 import personalwebsite.personalweb.exception.ErrorCode;
+import personalwebsite.personalweb.web.dto.comments.AlarmListResponseDto;
 import personalwebsite.personalweb.web.dto.comments.CommentForm;
 import personalwebsite.personalweb.web.dto.comments.CommentListResponseDto;
+import javax.servlet.http.HttpSession;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -25,15 +31,19 @@ public class CommentService {
 
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
+    private final AlarmRepository alarmRepository;
+    private final UserRepository userRepository;
+    private final HttpSession httpSession;
 
     /**
      * 댓글 저장: 댓글이 저장될 post를 찾고 form에 담겨진 댓글을 저장한뒤 저장된 댓글의 id를 리턴한다.
+     * 알림 저장: 등록된 댓글에 대한 알림을 저장한다.
      * @param postId post id
      * @param commentForm 저장할 댓글의 정보를 담은 dto
-     * @return comment id
+     * @return 알림 정보를 담은 dto
      */
     @Transactional
-    public Long saveComments(Long postId, CommentForm commentForm) {
+    public AlarmListResponseDto saveComments(Long postId, CommentForm commentForm) {
 
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
@@ -44,8 +54,18 @@ public class CommentService {
 
         Comment comment = commentForm.toEntity();
         comment.setPost(post);
+        commentRepository.save(comment).getId();
 
-        return commentRepository.save(comment).getId();
+        String message = commentForm.getUsername()+"님이 "+post.getTitle()+"에 댓글을 작성하였습니다.";
+        Alarm alarm = Alarm.builder()
+                .postId(postId)
+                .message(message)
+                .checked(0)
+                .build();
+        alarm.setUser(post.getUser());
+        AlarmListResponseDto dto = new AlarmListResponseDto(alarmRepository.save(alarm));
+
+        return dto;
     }
 
     /**
@@ -91,5 +111,38 @@ public class CommentService {
             log.error("username duplicated");
             throw new CustomException(ErrorCode.DUPLICATE_COMMENT_USERNAME);
         }
+    }
+
+    /**
+     * 로그인 사용자에게 보여줘야할 확인하지 않은 알림 목록을 가져온다.
+     * @return 알림 정보를 담은 dto 리스트
+     */
+    public Map<Integer, AlarmListResponseDto> findAllUncheckedAlarms() {
+
+        SessionUser sessionUser = (SessionUser) httpSession.getAttribute("user");
+        User user = userRepository.findByEmail(sessionUser.getEmail()).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        Map<Integer, AlarmListResponseDto> result = new HashMap<>();
+        List<Alarm> alarms = alarmRepository.findUncheckedAlarmsByUserId(user.getId());
+        for (Alarm alarm : alarms) {
+            result.put(alarm.getId().intValue(), new AlarmListResponseDto(alarm));
+        }
+
+        return result;
+    }
+
+    /**
+     * 알림을 클릭하면 확인 여부를 체크하고 알림이 등록된 게시글의 페이지를 리턴한다.
+     * @param alarmId
+     * @return 알림이 등록된 게시글의 id
+     */
+    @Transactional
+    public Long checkAlarm(Long alarmId) {
+
+        Alarm alarm = alarmRepository.findById(alarmId).orElseThrow(() -> new CustomException(ErrorCode.ALARM_NOT_FOUND));
+        if (alarm.getChecked() == 0) {
+            alarm.setCheckedYes(); // 0->1
+        }
+        return alarm.getPostId();
     }
 }

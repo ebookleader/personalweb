@@ -8,14 +8,11 @@ import org.springframework.web.servlet.ModelAndView;
 import personalwebsite.personalweb.config.auth.dto.SessionUser;
 import personalwebsite.personalweb.service.CommentService;
 import personalwebsite.personalweb.web.dto.Message;
+import personalwebsite.personalweb.web.dto.comments.AlarmListResponseDto;
 import personalwebsite.personalweb.web.dto.comments.CommentForm;
-import personalwebsite.personalweb.web.dto.comments.CommentListResponseDto;
 import javax.servlet.http.HttpSession;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
-@RestController
+@Controller
 @Slf4j
 @RequiredArgsConstructor
 public class CommentController {
@@ -23,9 +20,10 @@ public class CommentController {
     private final CommentService commentService;
     private final HttpSession httpSession;
 
-    /** 댓글을 저장하고 결과에 따라 결과 메시지와 이동할 주소를 넣은 ModelAndView 객체를 리턴한다. */
+    /** 댓글을 저장하고 새로운 댓글에 대한 알림정보를 리턴한다. (ajax에서 사용) */
     @PostMapping("/postComment/{postId}")
-    public Long saveComment(@PathVariable Long postId, @RequestBody CommentForm commentForm) {
+    @ResponseBody
+    public AlarmListResponseDto saveComment(@PathVariable Long postId, @RequestBody CommentForm commentForm) {
 
         SessionUser user = (SessionUser) httpSession.getAttribute("user");
         if (user == null) {
@@ -47,5 +45,13 @@ public class CommentController {
         mav.setViewName("message");
 
         return mav;
+    }
+
+    /** 알림을 클릭하면 해당 알림이 등록된 게시글로 이동하고 알림 체크 여부를 설정해준다. */
+    @GetMapping("/alarm/{alarmId}")
+    public String checkAlarm(@PathVariable Long alarmId) {
+
+        Long postId = commentService.checkAlarm(alarmId);
+        return "redirect:/posts/" + postId;
     }
 }

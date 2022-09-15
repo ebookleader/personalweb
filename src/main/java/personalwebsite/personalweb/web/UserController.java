@@ -1,6 +1,7 @@
 package personalwebsite.personalweb.web;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -13,6 +14,7 @@ import javax.servlet.http.HttpSession;
 
 @Controller
 @RequiredArgsConstructor
+@Slf4j
 public class UserController {
 
     private final UserService userService;
@@ -22,6 +24,6 @@ public class UserController {
     public String basicUserLogin(LoginForm form) {
         BasicUser user = userService.saveBasicUser(form);
         httpSession.setAttribute("user", new SessionUser(user));
-        return "home";
+        return "redirect:/";
     }
 }
